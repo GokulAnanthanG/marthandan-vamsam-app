@@ -1,0 +1,21 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "src/assets/fonts/CormorantGaramond_600SemiBold.ttf",
+      "sha1": "3946cea5d2f369766d54573fdae34cfcebfe7126"
+    },
+    {
+      "path": "src/assets/fonts/CormorantGaramond_700Bold.ttf",
+      "sha1": "c476b9ea6618c83ad0a64abd542eb3e09c142a49"
+    },
+    {
+      "path": "src/assets/fonts/Montserrat_500Medium.ttf",
+      "sha1": "77f3553415d858c653baea45aacab20196776334"
+    },
+    {
+      "path": "src/assets/fonts/Montserrat_600SemiBold.ttf",
+      "sha1": "79f74616d68b87d6cf89798fe72259036326567a"
+    }
+  ]
+}
