@@ -6,6 +6,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { colors } from '../theme/colors';
 import { View, Text, StyleSheet } from 'react-native';
 
+import FamilyTreeScreen from '../screens/FamilyTree/FamilyTreeScreen';
+
 const Tab = createBottomTabNavigator();
 
 // Placeholder screens for other tabs
@@ -50,7 +52,7 @@ const MainTabNavigator = () => {
       />
       <Tab.Screen 
         name="FamilyTreeTab" 
-        component={() => <PlaceholderScreen name={t('familyTree')} />} 
+        component={FamilyTreeScreen} 
         options={{
           tabBarLabel: t('familyTree'),
           tabBarIcon: ({ color, size }) => <TreeDeciduous color={color} size={size} />

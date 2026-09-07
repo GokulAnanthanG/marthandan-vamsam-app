@@ -1,8 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://10.0.2.2:3000/api'; // Standard Android emulator localhost
-
+// const API_URL = 'http://10.0.2.2:3000/api'; // Standard Android emulator localhost
+const API_URL = 'http://10.44.138.194:3000/api'; // Standard Android emulator localhost
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -66,5 +66,13 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export const familyTreeApi = {
+  getTrees: () => api.get('/family-trees'),
+  getTreeBranch: (treeId: string, rootMemberId?: string) => 
+    api.get(`/family-trees/${treeId}/tree${rootMemberId ? `?rootMemberId=${rootMemberId}` : ''}`),
+  addMember: (treeId: string, data: any) => api.post(`/family-trees/${treeId}/members`, data),
+  addChild: (treeId: string, parentId: string, data: any) => api.post(`/family-trees/${treeId}/members/${parentId}/children`, data),
+};
 
 export default api;
