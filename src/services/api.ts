@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // const API_URL = 'http://10.0.2.2:3000/api'; // Standard Android emulator localhost
-const API_URL = 'http://10.44.138.194:3000/api'; // Standard Android emulator localhost
+const API_URL = 'http://10.0.2.2:3000/api'; // Standard Android emulator localhost
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -68,11 +68,55 @@ api.interceptors.response.use(
 );
 
 export const familyTreeApi = {
+  createTree: (data: any) => api.post('/family-trees', data),
   getTrees: () => api.get('/family-trees'),
   getTreeBranch: (treeId: string, rootMemberId?: string) => 
     api.get(`/family-trees/${treeId}/tree${rootMemberId ? `?rootMemberId=${rootMemberId}` : ''}`),
   addMember: (treeId: string, data: any) => api.post(`/family-trees/${treeId}/members`, data),
   addChild: (treeId: string, parentId: string, data: any) => api.post(`/family-trees/${treeId}/members/${parentId}/children`, data),
+  
+  // Phase 2
+  moveSubtree: (treeId: string, subtreeRootId: string, newParentId: string) => 
+    api.post(`/family-trees/${treeId}/relationships/move-subtree`, { subtreeRootId, newParentId }),
+  insertBetween: (treeId: string, parentId: string, childId: string, newMemberData: any) =>
+    api.post(`/family-trees/${treeId}/relationships/insert-between`, { parentId, childId, newMemberData }),
+  deleteSubtree: (treeId: string, memberId: string) => 
+    api.delete(`/family-trees/${treeId}/members/${memberId}`),
+  restoreSubtree: (treeId: string, memberId: string) =>
+    api.post(`/family-trees/${treeId}/members/${memberId}/restore-subtree`),
+  getDeletedMembers: (treeId: string) =>
+    api.get(`/family-trees/${treeId}/deleted-members`),
+};
+
+export const familyMediaApi = {
+  getAllHeadDetails: (treeId: string) =>
+    api.get(`/family-media/all-head-details/${treeId}`),
+  getHeadDetails: (treeId: string, headMemberId: string) =>
+    api.get(`/family-media/head-details/${treeId}/${headMemberId}`),
+  updateHeadDetails: (treeId: string, headMemberId: string, data: any) =>
+    api.put(`/family-media/head-details/${treeId}/${headMemberId}`, data),
+  getBranchPhotos: (rootMemberId: string) =>
+    api.get(`/family-media/branch-photos/${rootMemberId}`),
+  addBranchPhoto: (rootMemberId: string, data: any) =>
+    api.post(`/family-media/branch-photos/${rootMemberId}`, data),
+  deleteBranchPhoto: (photoId: string) =>
+    api.delete(`/family-media/branch-photos/${photoId}`),
+};
+
+// Phase 3
+export const familyRequestApi = {
+  createRequest: (data: any) => api.post('/family-data-requests', data),
+  getRequests: () => api.get('/family-data-requests'),
+  approveRequest: (requestId: string) => api.post(`/family-data-requests/${requestId}/approve`),
+  rejectRequest: (requestId: string, reviewComment?: string) => api.post(`/family-data-requests/${requestId}/reject`, { reviewComment }),
+};
+
+// Phase 4
+export const specialAccessApi = {
+  requestAccess: (data: any) => api.post('/special-access-permissions', data),
+  getPermissions: () => api.get('/special-access-permissions'),
+  approveAccess: (permissionId: string) => api.post(`/special-access-permissions/${permissionId}/approve`),
+  rejectAccess: (permissionId: string) => api.post(`/special-access-permissions/${permissionId}/reject`),
 };
 
 export default api;

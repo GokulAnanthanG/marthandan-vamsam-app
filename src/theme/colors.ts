@@ -11,4 +11,5 @@ export const colors = {
   success: '#2E7D32',
   border: '#E0D8C8',
   disabled: '#C0C0C0',
+  text: '#1C231F', // Alias for backward compatibility
 };
