@@ -74,6 +74,7 @@ export const familyTreeApi = {
     api.get(`/family-trees/${treeId}/tree${rootMemberId ? `?rootMemberId=${rootMemberId}` : ''}`),
   addMember: (treeId: string, data: any) => api.post(`/family-trees/${treeId}/members`, data),
   addChild: (treeId: string, parentId: string, data: any) => api.post(`/family-trees/${treeId}/members/${parentId}/children`, data),
+  addSpouse: (treeId: string, memberId: string, data: any) => api.post(`/family-trees/${treeId}/members/${memberId}/spouse`, data),
   
   // Phase 2
   moveSubtree: (treeId: string, subtreeRootId: string, newParentId: string) => 
@@ -86,6 +87,8 @@ export const familyTreeApi = {
     api.post(`/family-trees/${treeId}/members/${memberId}/restore-subtree`),
   getDeletedMembers: (treeId: string) =>
     api.get(`/family-trees/${treeId}/deleted-members`),
+  searchMembers: (treeId: string, query: string) =>
+    api.get(`/family-trees/${treeId}/members/search?q=${query}`),
 };
 
 export const familyMediaApi = {
