@@ -1,23 +1,32 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Text, Modal, TextInput, ScrollView } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Text, TextInput, ScrollView } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { familyTreeApi } from '../../services/api';
 import { colors } from '../../theme/colors';
 import { WEBVIEW_HTML } from './webviewHtml';
+import { useAuth } from '../../context/AuthContext';
+import MemberActionModal, { ActionMode } from '../../components/FamilyTree/MemberActionModal';
+import MemberActionSheet, { ActionSheetOption } from '../../components/FamilyTree/MemberActionSheet';
 
 export default function FamilyTreeScreen() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [trees, setTrees] = useState<any[]>([]);
   const [activeTreeId, setActiveTreeId] = useState<string | null>(null);
   const [treeData, setTreeData] = useState<any>(null);
+  
+  // Breadcrumbs/History for View Family
+  const [history, setHistory] = useState<{rootId?: string, name: string}[]>([]);
   const webviewRef = useRef<WebView>(null);
 
   // Modals state
-  const [addModalVisible, setAddModalVisible] = useState(false);
-  const [addMode, setAddMode] = useState<'CHILD' | 'SPOUSE' | 'ROOT' | null>(null);
-  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [actionMode, setActionMode] = useState<ActionMode>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<any>(null);
 
-  const [formData, setFormData] = useState({ name: '', gender: 'MALE', dateOfBirth: '' });
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadTrees = async () => {
     try {
@@ -30,6 +39,7 @@ export default function FamilyTreeScreen() {
         const treeId = loadedTrees[0]._id;
         setActiveTreeId(treeId);
         loadBranch(treeId);
+        setHistory([{ name: 'Complete Tree' }]);
       }
     } catch (e) {
       console.error(e);
@@ -39,16 +49,28 @@ export default function FamilyTreeScreen() {
     }
   };
 
-  const loadBranch = async (treeId: string, rootMemberId?: string) => {
+  const loadBranch = async (treeId: string, rootMemberId?: string, memberName?: string) => {
     try {
       setLoading(true);
       const res = await familyTreeApi.getTreeBranch(treeId, rootMemberId);
       setTreeData(res.data?.data);
+      
+      if (memberName) {
+        setHistory(prev => [...prev, { rootId: rootMemberId, name: `${memberName}'s Family` }]);
+      }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
+  };
+
+  const popHistory = (index: number) => {
+    if (!activeTreeId) return;
+    const item = history[index];
+    const newHistory = history.slice(0, index + 1);
+    setHistory(newHistory);
+    loadBranch(activeTreeId, item.rootId);
   };
 
   useEffect(() => {
@@ -57,13 +79,31 @@ export default function FamilyTreeScreen() {
 
   useEffect(() => {
     if (treeData && webviewRef.current) {
-      // Send data to WebView
       webviewRef.current.postMessage(JSON.stringify({
         type: 'SET_TREE_DATA',
         payload: treeData,
       }));
     }
   }, [treeData]);
+
+  const handleSearch = async () => {
+    if (!activeTreeId || !searchQuery) return;
+    try {
+      const res = await familyTreeApi.searchMembers(activeTreeId, searchQuery);
+      const results = res.data?.data;
+      if (results && results.length > 0) {
+        const firstMatchId = results[0]._id;
+        webviewRef.current?.postMessage(JSON.stringify({
+          type: 'HIGHLIGHT_NODE',
+          memberId: firstMatchId,
+        }));
+      } else {
+        Alert.alert('Search', 'No members found');
+      }
+    } catch(e) {
+      console.error('Search error', e);
+    }
+  };
 
   const handleMessage = async (event: any) => {
     try {
@@ -74,7 +114,6 @@ export default function FamilyTreeScreen() {
           payload: treeData,
         }));
       } else if (data.type === 'LOAD_MORE') {
-        // Handle loading ghost node (lazy loading)
         if (activeTreeId) {
            const res = await familyTreeApi.getTreeBranch(activeTreeId, data.memberId);
            if (res.data?.data) {
@@ -103,61 +142,148 @@ export default function FamilyTreeScreen() {
            }
         }
       } else if (data.type === 'NODE_CLICK') {
-        setSelectedMemberId(data.memberId);
-        Alert.alert('Action', 'What would you like to do?', [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Add Child', onPress: () => { setAddMode('CHILD'); setAddModalVisible(true); } },
-          { text: 'Add Spouse', onPress: () => { setAddMode('SPOUSE'); setAddModalVisible(true); } }
-        ]);
+        const clickedMember = treeData?.members.find((m:any) => m._id === data.memberId);
+        if (clickedMember) {
+          setSelectedMember(clickedMember);
+          setSheetVisible(true);
+        }
       }
     } catch (e) {
       console.error(e);
     }
   };
 
-  const handleAddMember = async () => {
-    if (!activeTreeId || !formData.name) return;
-    try {
-      setLoading(true);
-      if (addMode === 'ROOT') {
-        await familyTreeApi.addMember(activeTreeId, formData);
-      } else if (addMode === 'CHILD' && selectedMemberId) {
-        await familyTreeApi.addChild(activeTreeId, selectedMemberId, formData);
-      } else if (addMode === 'SPOUSE' && selectedMemberId) {
-        await familyTreeApi.addSpouse(activeTreeId, selectedMemberId, formData);
-      }
-      setAddModalVisible(false);
-      setFormData({ name: '', gender: 'MALE', dateOfBirth: '' });
-      loadBranch(activeTreeId);
-    } catch (e) {
-      console.error(e);
-      Alert.alert('Error', 'Failed to add member');
-    } finally {
-      setLoading(false);
+  const handleSaveMember = async (formData: any) => {
+    if (!activeTreeId) return;
+    
+    if (actionMode === 'ROOT') {
+      await familyTreeApi.addMember(activeTreeId, formData);
+    } else if (actionMode === 'CHILD' && selectedMember) {
+      await familyTreeApi.addChild(activeTreeId, selectedMember._id, formData);
+    } else if (actionMode === 'SPOUSE' && selectedMember) {
+      await familyTreeApi.addSpouse(activeTreeId, selectedMember._id, formData);
     }
+    
+    // Reload branch to reflect changes
+    const currentRoot = history[history.length - 1]?.rootId;
+    loadBranch(activeTreeId, currentRoot);
+  };
+
+  const handleDeleteSubtree = () => {
+    if (!activeTreeId || !selectedMember) return;
+    Alert.alert(
+      'Delete Connection',
+      `This action will hide the entire descendant subtree.\n\nType DELETE to confirm`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Confirm', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await familyTreeApi.deleteSubtree(activeTreeId, selectedMember._id);
+              const currentRoot = history[history.length - 1]?.rootId;
+              loadBranch(activeTreeId, currentRoot);
+            } catch (e) {
+              Alert.alert('Error', 'Failed to delete subtree');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const getActionOptions = (): ActionSheetOption[] => {
+    const role = user?.role || 'NORMAL_USER';
+    const isAuthorized = ['ADMIN', 'SUB_ADMIN', 'DATA_ENTRY'].includes(role);
+    const isAdmin = role === 'ADMIN';
+    const isMale = selectedMember?.gender === 'MALE';
+
+    const options: ActionSheetOption[] = [
+      { label: 'View Profile', onPress: () => Alert.alert('Profile', 'Profile view coming soon') },
+      { label: 'View Family', onPress: () => {
+          if (activeTreeId && selectedMember) {
+            loadBranch(activeTreeId, selectedMember._id, selectedMember.name);
+          }
+      }}
+    ];
+
+    if (isAuthorized) {
+      options.push({ label: 'Edit Member', onPress: () => { setActionMode('EDIT'); setModalVisible(true); } });
+      
+      if (isMale || isAdmin) {
+         options.push({ label: 'Add Child', onPress: () => { setActionMode('CHILD'); setModalVisible(true); } });
+      }
+      
+      if (isAdmin) {
+         options.push({ label: 'Add Spouse', onPress: () => { setActionMode('SPOUSE'); setModalVisible(true); } });
+         options.push({ label: 'Move Subtree', onPress: () => Alert.alert('Move Subtree', 'Admin graph editor functionality needed') });
+         options.push({ label: 'Delete Subtree', danger: true, onPress: handleDeleteSubtree });
+      }
+    }
+
+    return options;
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Family Tree</Text>
-        <TouchableOpacity 
-          style={styles.treeSelector} 
-          onPress={() => {
-            Alert.alert(
-              'Switch Family Tree',
-              'Select a tree:',
-              trees.map(t => ({
-                text: t.name,
-                onPress: () => { setActiveTreeId(t._id); loadBranch(t._id); }
-              }))
-            );
-          }}
-        >
-          <Text style={styles.treeSelectorText}>
-            {trees.find(t => t._id === activeTreeId)?.name || 'Select a Tree'} ▾
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.headerTop}>
+          <Text style={styles.headerTitle}>Family Tree</Text>
+          <TouchableOpacity 
+            style={styles.treeSelector} 
+            onPress={() => {
+              Alert.alert(
+                'Switch Family Tree',
+                'Select a tree:',
+                trees.map(t => ({
+                  text: t.name,
+                  onPress: () => { 
+                    setActiveTreeId(t._id); 
+                    setHistory([{ name: 'Complete Tree' }]);
+                    loadBranch(t._id); 
+                  }
+                }))
+              );
+            }}
+          >
+            <Text style={styles.treeSelectorText}>
+              {trees.find(t => t._id === activeTreeId)?.name || 'Select a Tree'} ▾
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search member..."
+            placeholderTextColor="#888"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onSubmitEditing={handleSearch}
+          />
+          <TouchableOpacity style={styles.searchBtn} onPress={handleSearch}>
+            <Text style={styles.searchBtnText}>Search</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Breadcrumbs */}
+        <ScrollView horizontal style={styles.breadcrumbs} showsHorizontalScrollIndicator={false}>
+          {history.map((h, index) => (
+            <React.Fragment key={index}>
+              <TouchableOpacity onPress={() => popHistory(index)}>
+                <Text style={[styles.crumbText, index === history.length - 1 && styles.crumbTextActive]}>
+                  {h.name}
+                </Text>
+              </TouchableOpacity>
+              {index < history.length - 1 && <Text style={styles.crumbSeparator}> &gt; </Text>}
+            </React.Fragment>
+          ))}
+        </ScrollView>
       </View>
 
       <View style={styles.webviewContainer}>
@@ -176,42 +302,29 @@ export default function FamilyTreeScreen() {
         {(!treeData || treeData.members?.length === 0) && !loading && (
            <View style={styles.emptyOverlay}>
              <Text style={styles.emptyText}>No members found</Text>
-             <TouchableOpacity style={styles.btn} onPress={() => { setAddMode('ROOT'); setAddModalVisible(true); }}>
-               <Text style={styles.btnText}>Add Root Member</Text>
-             </TouchableOpacity>
+             {['ADMIN', 'SUB_ADMIN', 'DATA_ENTRY'].includes(user?.role || '') && (
+               <TouchableOpacity style={styles.btn} onPress={() => { setActionMode('ROOT'); setModalVisible(true); }}>
+                 <Text style={styles.btnText}>Add Root Member</Text>
+               </TouchableOpacity>
+             )}
            </View>
         )}
       </View>
 
-      <Modal visible={addModalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              {addMode === 'CHILD' ? 'Add Child' : addMode === 'SPOUSE' ? 'Add Spouse' : 'Add Root'}
-            </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Name"
-              value={formData.name}
-              onChangeText={t => setFormData({...formData, name: t})}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Gender (MALE/FEMALE)"
-              value={formData.gender}
-              onChangeText={t => setFormData({...formData, gender: t})}
-            />
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.btnOutline} onPress={() => setAddModalVisible(false)}>
-                <Text style={styles.btnOutlineText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.btn} onPress={handleAddMember}>
-                <Text style={styles.btnText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <MemberActionSheet 
+        visible={sheetVisible}
+        member={selectedMember}
+        options={getActionOptions()}
+        onClose={() => setSheetVisible(false)}
+      />
+
+      <MemberActionModal
+        visible={modalVisible}
+        mode={actionMode}
+        targetMember={selectedMember}
+        onClose={() => setModalVisible(false)}
+        onSave={handleSaveMember}
+      />
     </View>
   );
 }
@@ -219,16 +332,25 @@ export default function FamilyTreeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
-    padding: 20, paddingTop: 40, backgroundColor: '#011A0E',
-    alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#C9A85A'
+    padding: 16, paddingTop: 40, backgroundColor: '#011A0E',
+    borderBottomWidth: 1, borderBottomColor: '#C9A85A'
   },
+  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   headerTitle: { fontSize: 24, color: '#C9A85A', textTransform: 'uppercase' },
   treeSelector: {
-    marginTop: 8, paddingHorizontal: 16, paddingVertical: 6,
+    paddingHorizontal: 12, paddingVertical: 6,
     backgroundColor: 'rgba(201, 168, 90, 0.15)', borderRadius: 20,
     borderWidth: 1, borderColor: 'rgba(201, 168, 90, 0.4)'
   },
   treeSelectorText: { fontSize: 14, color: '#FDFBF7' },
+  searchContainer: { flexDirection: 'row', marginTop: 15, gap: 10 },
+  searchInput: { flex: 1, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 12, height: 40 },
+  searchBtn: { backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 15, justifyContent: 'center' },
+  searchBtnText: { color: '#000', fontWeight: 'bold' },
+  breadcrumbs: { marginTop: 15, flexDirection: 'row' },
+  crumbText: { color: '#888', fontSize: 14 },
+  crumbTextActive: { color: '#C9A85A', fontWeight: 'bold' },
+  crumbSeparator: { color: '#888', marginHorizontal: 5 },
   webviewContainer: { flex: 1, position: 'relative' },
   webview: { flex: 1, backgroundColor: '#f5f5f5' },
   loader: { position: 'absolute', top: '50%', left: '50%', zIndex: 10, marginLeft: -18, marginTop: -18 },
@@ -238,12 +360,5 @@ const styles = StyleSheet.create({
   },
   emptyText: { fontSize: 18, color: '#333', marginBottom: 20 },
   btn: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
-  btnText: { color: '#fff', fontWeight: 'bold' },
-  btnOutline: { borderWidth: 1, borderColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
-  btnOutlineText: { color: colors.primary },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-  modalContent: { backgroundColor: '#fff', padding: 20, borderRadius: 12 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12, marginBottom: 15 },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }
+  btnText: { color: '#fff', fontWeight: 'bold' }
 });

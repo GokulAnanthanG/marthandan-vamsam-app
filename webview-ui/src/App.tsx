@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ReactFlow,
   useNodesState,
@@ -22,6 +22,8 @@ const nodeTypes = {
 export default function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+  const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
 
   const processTreeData = (treeData: any) => {
     if (!treeData || !treeData.members) return;
@@ -47,10 +49,10 @@ export default function App() {
 
     members.forEach((member: any) => {
       if (processedMemberIds.has(member._id)) return;
-      
+
       const spouseId = spousesMap.get(member._id);
       let spouseData = null;
-      
+
       if (spouseId) {
         spouseData = members.find((m: any) => m._id === spouseId);
         if (spouseData) {
@@ -62,9 +64,10 @@ export default function App() {
         id: member._id,
         type: 'person',
         position: { x: 0, y: 0 },
-        data: { member, spouse: spouseData },
+        data: { member, spouse: spouseData, highlighted: false },
         sourcePosition: Position.Bottom,
         targetPosition: Position.Top,
+        draggable: false,
       });
 
       processedMemberIds.add(member._id);
@@ -73,17 +76,15 @@ export default function App() {
     // Create edges for PARENT_CHILD
     relationships.forEach((rel: any) => {
       if (rel.relationshipType === 'PARENT_CHILD') {
-        // If parent is a spouse, link from the primary node id that represents the couple
-        // We will just use whichever node exists in newNodes
         let sourceId = rel.parentMemberId;
         let targetId = rel.childMemberId;
 
         const sourceNodeExists = newNodes.find(n => n.id === sourceId);
         if (!sourceNodeExists) {
-           const partnerId = spousesMap.get(sourceId);
-           if (partnerId && newNodes.find(n => n.id === partnerId)) {
-             sourceId = partnerId;
-           }
+          const partnerId = spousesMap.get(sourceId);
+          if (partnerId && newNodes.find(n => n.id === partnerId)) {
+            sourceId = partnerId;
+          }
         }
 
         newEdges.push({
@@ -108,6 +109,20 @@ export default function App() {
         const data = JSON.parse(event.data);
         if (data.type === 'SET_TREE_DATA') {
           processTreeData(data.payload);
+        } else if (data.type === 'HIGHLIGHT_NODE') {
+          setNodes((nds) => nds.map((n) => {
+            if (n.id === data.memberId) {
+              return { ...n, data: { ...n.data, highlighted: true } };
+            }
+            return { ...n, data: { ...n.data, highlighted: false } };
+          }));
+
+          if (reactFlowInstance) {
+            const node = reactFlowInstance.getNode(data.memberId);
+            if (node) {
+              reactFlowInstance.setCenter(node.position.x + 110, node.position.y + 60, { zoom: 1.5, duration: 800 });
+            }
+          }
         }
       } catch (e) {
         console.error('Failed to parse message', e);
@@ -115,7 +130,7 @@ export default function App() {
     };
 
     window.addEventListener('message', handleMessage);
-    
+
     // In React Native WebView, document.addEventListener('message') is sometimes used
     document.addEventListener('message', handleMessage as any);
 
@@ -128,7 +143,7 @@ export default function App() {
       window.removeEventListener('message', handleMessage);
       document.removeEventListener('message', handleMessage as any);
     };
-  }, []);
+  }, [reactFlowInstance]);
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#f5f5f5' }}>
@@ -138,10 +153,12 @@ export default function App() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
+        onInit={setReactFlowInstance}
+        nodesDraggable={false}
         fitView
       >
         <Background color="#ccc" gap={16} />
-        <Controls />
+        <Controls showInteractive={false} />
         <MiniMap />
       </ReactFlow>
     </div>

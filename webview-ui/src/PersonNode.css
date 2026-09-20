@@ -82,7 +82,8 @@
   margin-bottom: 4px;
 }
 
-.person-job, .person-date {
+.person-job,
+.person-date {
   font-size: 11px;
   color: #666;
 }
@@ -96,6 +97,10 @@
 .handle {
   width: 8px;
   height: 8px;
-  background: #ccc;
-  border: 2px solid white;
+  opacity: 0;
+}
+
+.person-card.highlighted {
+  box-shadow: 0 0 0 4px #C9A85A;
+  transform: scale(1.05);
 }

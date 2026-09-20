@@ -11,7 +11,7 @@ interface MemberData {
   isFadedSkeleton?: boolean;
 }
 
-const PersonCard = ({ member, isSpouse = false }: { member: MemberData, isSpouse?: boolean }) => {
+const PersonCard = ({ member, isSpouse = false, highlighted = false }: { member: MemberData, isSpouse?: boolean, highlighted?: boolean }) => {
   const borderColor = member.gender === 'FEMALE' ? '#f06292' : member.gender === 'MALE' ? '#4dabf5' : '#888';
   
   if (member.isFadedSkeleton) {
@@ -25,7 +25,7 @@ const PersonCard = ({ member, isSpouse = false }: { member: MemberData, isSpouse
   }
 
   return (
-    <div className={`person-card ${isSpouse ? 'spouse' : ''}`} style={{ borderTopColor: borderColor }} onClick={() => (window as any).ReactNativeWebView?.postMessage(JSON.stringify({ type: 'NODE_CLICK', memberId: member._id }))}>
+    <div className={`person-card ${isSpouse ? 'spouse' : ''} ${highlighted && !isSpouse ? 'highlighted' : ''}`} style={{ borderTopColor: borderColor }} onClick={() => (window as any).ReactNativeWebView?.postMessage(JSON.stringify({ type: 'NODE_CLICK', memberId: member._id }))}>
       <div className="card-inner">
         {member.photoUrl ? (
           <img src={member.photoUrl} alt={member.name} className="person-photo" />
@@ -44,13 +44,13 @@ const PersonCard = ({ member, isSpouse = false }: { member: MemberData, isSpouse
   );
 };
 
-export default function PersonNode({ data }: { data: { member: MemberData, spouse?: MemberData } }) {
+export default function PersonNode({ data }: { data: { member: MemberData, spouse?: MemberData, highlighted?: boolean } }) {
   return (
     <div className="person-node-container">
       <Handle type="target" position={Position.Top} className="handle top" />
       
       <div className="node-content">
-        <PersonCard member={data.member} />
+        <PersonCard member={data.member} highlighted={data.highlighted} />
         
         {data.spouse && (
           <>
