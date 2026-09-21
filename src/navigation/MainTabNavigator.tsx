@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, TreeDeciduous, Briefcase, Store, User } from 'lucide-react-native';
+import { Home, TreeDeciduous, Users, Inbox, User } from 'lucide-react-native';
 import HomeScreen from '../screens/main/HomeScreen';
 import { useLanguage } from '../context/LanguageContext';
 import { colors } from '../theme/colors';
@@ -31,15 +31,20 @@ const MainTabNavigator = () => {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarActiveTintColor: '#E1B95B',
+        tabBarInactiveTintColor: '#889C94',
         tabBarStyle: {
-          backgroundColor: colors.primary,
+          backgroundColor: '#0F2F20',
           borderTopWidth: 0,
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 65,
         },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontFamily: 'Montserrat_500Medium',
+          marginTop: 4,
+        }
       }}
     >
       <Tab.Screen 
@@ -59,19 +64,29 @@ const MainTabNavigator = () => {
         }} 
       />
       <Tab.Screen 
-        name="BusinessesTab" 
-        component={() => <PlaceholderScreen name={t('businesses')} />} 
+        name="MembersTab" 
+        component={() => <PlaceholderScreen name={t('members') || 'Members'} />} 
         options={{
-          tabBarLabel: t('businesses'),
-          tabBarIcon: ({ color, size }) => <Briefcase color={color} size={size} />
+          tabBarLabel: t('members') || 'Members',
+          tabBarIcon: ({ color, size }) => <Users color={color} size={size} />
         }} 
       />
       <Tab.Screen 
-        name="ShopsTab" 
-        component={() => <PlaceholderScreen name={t('shops')} />} 
+        name="RequestsTab" 
+        component={() => <PlaceholderScreen name={t('requests') || 'Requests'} />} 
         options={{
-          tabBarLabel: t('shops'),
-          tabBarIcon: ({ color, size }) => <Store color={color} size={size} />
+          tabBarLabel: t('requests') || 'Requests',
+          tabBarIcon: ({ color, size }) => (
+            <View>
+              <Inbox color={color} size={size} />
+              <View style={{
+                position: 'absolute', right: -6, top: -4, backgroundColor: '#E04F5F', 
+                borderRadius: 10, width: 16, height: 16, justifyContent: 'center', alignItems: 'center'
+              }}>
+                <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>2</Text>
+              </View>
+            </View>
+          )
         }} 
       />
       <Tab.Screen 

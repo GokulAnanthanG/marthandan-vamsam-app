@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   ReactFlow,
   useNodesState,
   useEdgesState,
-  Background,
   Controls,
   MiniMap,
   type Node,
@@ -24,6 +23,15 @@ export default function App() {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  const loadingNodeIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const handleNodeLoading = (event: any) => {
+      loadingNodeIdRef.current = event.detail;
+    };
+    window.addEventListener('NODE_LOADING', handleNodeLoading as any);
+    return () => window.removeEventListener('NODE_LOADING', handleNodeLoading as any);
+  }, []);
 
   const processTreeData = (treeData: any) => {
     if (!treeData || !treeData.members) return;
@@ -60,11 +68,14 @@ export default function App() {
         }
       }
 
+      const hasParent = relationships.some((rel: any) => rel.relationshipType === 'PARENT_CHILD' && (rel.childMemberId === member._id || (spouseId && rel.childMemberId === spouseId)));
+      const hasChildren = relationships.some((rel: any) => rel.relationshipType === 'PARENT_CHILD' && (rel.parentMemberId === member._id || (spouseId && rel.parentMemberId === spouseId)));
+
       newNodes.push({
         id: member._id,
         type: 'person',
         position: { x: 0, y: 0 },
-        data: { member, spouse: spouseData, highlighted: false },
+        data: { member, spouse: spouseData, highlighted: false, hasParent, hasChildren },
         sourcePosition: Position.Bottom,
         targetPosition: Position.Top,
         draggable: false,
@@ -93,7 +104,7 @@ export default function App() {
           target: targetId,
           type: 'step',
           animated: false,
-          style: { stroke: '#ccc', strokeWidth: 2 },
+          style: { stroke: '#004831', strokeWidth: 2 },
         });
       }
     });
@@ -101,6 +112,22 @@ export default function App() {
     const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(newNodes, newEdges);
     setNodes(layoutedNodes);
     setEdges(layoutedEdges);
+
+    if (loadingNodeIdRef.current && reactFlowInstance) {
+      const targetNode = layoutedNodes.find((n: Node) => n.id === loadingNodeIdRef.current);
+      if (targetNode) {
+        setTimeout(() => {
+          reactFlowInstance.setCenter(targetNode.position.x + 110, targetNode.position.y + 60, { zoom: reactFlowInstance.getZoom(), duration: 800 });
+          loadingNodeIdRef.current = null;
+        }, 100);
+      }
+    }
+
+    setTimeout(() => {
+      if ((window as any).ReactNativeWebView) {
+        (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: 'RENDER_COMPLETE' }));
+      }
+    }, 100);
   };
 
   useEffect(() => {
@@ -146,7 +173,7 @@ export default function App() {
   }, [reactFlowInstance]);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', background: '#f5f5f5' }}>
+    <div className="react-flow-wrapper">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -157,7 +184,6 @@ export default function App() {
         nodesDraggable={false}
         fitView
       >
-        <Background color="#ccc" gap={16} />
         <Controls showInteractive={false} />
         <MiniMap />
       </ReactFlow>

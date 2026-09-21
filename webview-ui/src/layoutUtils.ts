@@ -8,11 +8,11 @@ const nodeHeight = 120;
 
 export const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'TB') => {
   const isHorizontal = direction === 'LR';
-  dagreGraph.setGraph({ rankdir: direction, nodesep: 50, ranksep: 100 });
+  dagreGraph.setGraph({ rankdir: direction, nodesep: 80, ranksep: 120 });
 
   nodes.forEach((node) => {
     const hasSpouse = !!node.data?.spouse;
-    const currentWidth = hasSpouse ? 460 : 220;
+    const currentWidth = hasSpouse ? 450 : 220;
     dagreGraph.setNode(node.id, { width: currentWidth, height: nodeHeight });
   });
 
@@ -28,7 +28,7 @@ export const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'T
     node.sourcePosition = isHorizontal ? Position.Right : Position.Bottom;
 
     const hasSpouse = !!node.data?.spouse;
-    const currentWidth = hasSpouse ? 460 : 220;
+    const currentWidth = hasSpouse ? 450 : 220;
 
     node.position = {
       x: nodeWithPosition.x - currentWidth / 2,

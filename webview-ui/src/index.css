@@ -6,3 +6,7 @@ html, body, #root {
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
+.react-flow__node {
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}  
+ 
