@@ -185,7 +185,33 @@ export default function App() {
         fitView
       >
         <Controls showInteractive={false} />
-        <MiniMap />
+        <MiniMap 
+          nodeColor={(node: any) => {
+            if (node.data?.member?.isFadedSkeleton) return '#b0bec5';
+            if (node.data?.member?.gender === 'MALE') return '#42A5F5';
+            if (node.data?.member?.gender === 'FEMALE') return '#F06292';
+            return '#E5DDCF';
+          }}
+          nodeStrokeColor={(node: any) => {
+            if (node.data?.member?.isFadedSkeleton) return '#90a4ae';
+            if (node.data?.member?.gender === 'MALE') return '#1e88e5';
+            if (node.data?.member?.gender === 'FEMALE') return '#d81b60';
+            return '#c0b4a0';
+          }}
+          nodeStrokeWidth={2}
+          style={{
+            backgroundColor: '#F9F7F2',
+            borderRadius: '12px',
+            border: '1px solid #dcd3c6',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+            margin: '16px',
+          }}
+          maskColor="rgba(249, 247, 242, 0.7)"
+          maskStrokeColor="#004831"
+          maskStrokeWidth={2}
+          zoomable
+          pannable
+        />
       </ReactFlow>
     </div>
   );
