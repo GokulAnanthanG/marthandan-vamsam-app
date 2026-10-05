@@ -6,6 +6,7 @@ import { WEBVIEW_HTML_V2 } from './webviewHtml';
 import { useAuth } from '../../context/AuthContext';
 import MemberActionModal, { ActionMode } from '../../components/FamilyTree/MemberActionModal';
 import MemberActionSheet, { ActionSheetOption } from '../../components/FamilyTree/MemberActionSheet';
+import IdentityModal from '../../components/FamilyTree/IdentityModal';
 import { Search, SlidersHorizontal, MapPin, ChevronDown } from 'lucide-react-native';
 
 export default function FamilyTreeScreen() {
@@ -21,8 +22,58 @@ export default function FamilyTreeScreen() {
   const [actionMode, setActionMode] = useState<ActionMode>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
+  const [identityModalVisible, setIdentityModalVisible] = useState(false);
+  const [guestIdentityData, setGuestIdentityData] = useState<any>(null);
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const generateActionOptions = (member: any): ActionSheetOption[] => {
+    if (!member) return [];
+    const isGuest = user?.role === 'GUEST';
+    const isFemale = member.gender === 'FEMALE';
+    
+    if (isGuest) {
+      const options: ActionSheetOption[] = [];
+      if (!isFemale) {
+        options.push({
+          label: 'Request Add Child',
+          onPress: () => {
+             setActionMode('CHILD');
+             setIdentityModalVisible(true);
+          }
+        });
+      }
+      options.push({
+        label: 'Request Edit',
+        onPress: () => {
+           setActionMode('EDIT');
+           setIdentityModalVisible(true);
+        }
+      });
+      return options;
+    }
+
+    // Normal Authorized roles
+    const options: ActionSheetOption[] = [];
+    if (!isFemale) {
+      options.push({
+        label: 'Add Child',
+        onPress: () => {
+          setActionMode('CHILD');
+          setModalVisible(true);
+        }
+      });
+    }
+    options.push({
+      label: 'Edit',
+      onPress: () => {
+        setActionMode('EDIT');
+        setModalVisible(true);
+      }
+    });
+
+    return options;
+  };
   
   // Toggles
   const [viewMode, setViewMode] = useState<'Tree' | 'Node'>('Tree');
@@ -196,16 +247,50 @@ export default function FamilyTreeScreen() {
       <MemberActionSheet 
         visible={sheetVisible}
         member={selectedMember}
-        options={[]} 
+        options={generateActionOptions(selectedMember)} 
         onClose={() => setSheetVisible(false)}
+      />
+
+      <IdentityModal
+        visible={identityModalVisible}
+        onClose={() => setIdentityModalVisible(false)}
+        onSubmit={(data) => {
+          setGuestIdentityData(data);
+          setIdentityModalVisible(false);
+          setModalVisible(true);
+        }}
       />
 
       <MemberActionModal
         visible={modalVisible}
         mode={actionMode}
+        initialData={actionMode === 'EDIT' ? selectedMember : undefined}
         targetMember={selectedMember}
         onClose={() => setModalVisible(false)}
-        onSave={() => {}}
+        onSave={async (data) => {
+           if (user?.role === 'GUEST') {
+             // Submit to Request API
+             await familyTreeApi.submitTreeRequest({
+               requestType: actionMode === 'CHILD' ? 'ADD_CHILD' : 'EDIT_NODE',
+               targetNodeId: selectedMember._id,
+               requesterName: guestIdentityData.requesterName,
+               requesterFatherName: guestIdentityData.requesterFatherName,
+               requesterPhone: guestIdentityData.requesterPhone,
+               requestReason: guestIdentityData.requestReason,
+               requestedPayload: data
+             });
+             Alert.alert('Success', 'Your request has been submitted for review.');
+           } else {
+             // Direct Add/Edit API (Admin)
+             if (actionMode === 'CHILD') {
+               await familyTreeApi.addChild(activeTreeId!, selectedMember._id, data);
+             } else if (actionMode === 'EDIT') {
+               await familyTreeApi.updateMember(selectedMember._id, data);
+             }
+             // Reload branch
+             loadBranch(activeTreeId!);
+           }
+        }}
       />
     </View>
   );

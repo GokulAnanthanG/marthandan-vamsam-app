@@ -11,6 +11,7 @@ interface AuthContextProps {
   user: User | null;
   isLoading: boolean;
   login: (userData: User, accessToken: string, refreshToken: string) => Promise<void>;
+  guestLogin: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -46,6 +47,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(userData);
   };
 
+  const guestLogin = async () => {
+    const guestUser: User = { id: 'guest', fullName: 'Guest', role: 'GUEST' };
+    await AsyncStorage.setItem('user', JSON.stringify(guestUser));
+    // Guests don't get tokens, backend checks if no token and handles accordingly
+    setUser(guestUser);
+  };
+
   const logout = async () => {
     await AsyncStorage.removeItem('user');
     await AsyncStorage.removeItem('accessToken');
@@ -54,7 +62,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, guestLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

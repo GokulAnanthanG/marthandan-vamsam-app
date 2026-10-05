@@ -74,7 +74,10 @@ export const familyTreeApi = {
     api.get(`/family-trees/${treeId}/tree${rootMemberId ? `?rootMemberId=${rootMemberId}` : ''}`),
   addMember: (treeId: string, data: any) => api.post(`/family-trees/${treeId}/members`, data),
   addChild: (treeId: string, parentId: string, data: any) => api.post(`/family-trees/${treeId}/members/${parentId}/children`, data),
+  updateMember: (memberId: string, data: any) => api.put(`/family-trees/members/${memberId}`, data),
   addSpouse: (treeId: string, memberId: string, data: any) => api.post(`/family-trees/${treeId}/members/${memberId}/spouse`, data),
+  
+  submitTreeRequest: (data: any) => api.post('/tree-requests', data),
   
   // Phase 2
   moveSubtree: (treeId: string, subtreeRootId: string, newParentId: string) => 

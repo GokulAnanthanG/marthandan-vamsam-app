@@ -181,3 +181,18 @@
 .person-card.highlighted {
   box-shadow: 0 0 0 3px rgba(201, 168, 90, 0.4);
 }
+
+.legacy-loader {
+  width: 20px;
+  height: 20px;
+  border: 3px solid transparent;
+  border-top-color: #C9A85A; /* gold */
+  border-bottom-color: #004831; /* green */
+  border-radius: 50%;
+  animation: legacy-spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+@keyframes legacy-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import './PersonNode.css';
 
@@ -12,6 +13,7 @@ interface MemberData {
 }
 
 const PersonCard = ({ member, isSpouse = false, highlighted = false }: { member: MemberData, isSpouse?: boolean, highlighted?: boolean }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const borderColor = member.gender === 'FEMALE' ? '#F06292' : member.gender === 'MALE' ? '#42A5F5' : '#E5DDCF';
   const initial = member.name ? member.name.charAt(0).toUpperCase() : '';
   const isFounder = member.jobTitle?.toLowerCase() === 'founder';
@@ -19,11 +21,16 @@ const PersonCard = ({ member, isSpouse = false, highlighted = false }: { member:
   if (member.isFadedSkeleton) {
     return (
       <div className={`person-card skeleton`} style={{ borderTopColor: borderColor }} onClick={() => {
+        setIsLoading(true);
         window.dispatchEvent(new CustomEvent('NODE_LOADING', { detail: member._id }));
         (window as any).ReactNativeWebView?.postMessage(JSON.stringify({ type: 'LOAD_MORE', memberId: member._id }));
       }}>
         <div className="skeleton-content">
-          <span>{member.name}</span>
+          {isLoading ? (
+            <div className="legacy-loader"></div>
+          ) : (
+            <span>{member.name}</span>
+          )}
         </div>
       </div>
     );

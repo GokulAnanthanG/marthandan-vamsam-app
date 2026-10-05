@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, Modal, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Modal, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors } from '../../theme/colors';
 
 export type ActionMode = 'CHILD' | 'SPOUSE' | 'ROOT' | 'EDIT' | 'INSERT_BETWEEN' | null;
@@ -8,7 +9,7 @@ interface MemberActionModalProps {
   visible: boolean;
   mode: ActionMode;
   initialData?: any;
-  targetMember?: any; // The member being acted upon (parent, spouse, or self if edit)
+  targetMember?: any;
   onClose: () => void;
   onSave: (data: any, originalData: any) => Promise<void>;
 }
@@ -16,14 +17,18 @@ interface MemberActionModalProps {
 export default function MemberActionModal({ visible, mode, initialData, targetMember, onClose, onSave }: MemberActionModalProps) {
   const [formData, setFormData] = useState({
     name: '',
+    phone: '',
     gender: 'MALE',
-    dateOfBirth: '',
-    maritalStatus: 'SINGLE',
+    dateOfBirth: new Date(),
+    photoUrl: '', // Profile Photo
+    whatsapp: '',
+    residentialAddress: '',
+    businessAddress: '',
     occupationType: 'OTHER',
-    jobTitle: '',
-    address: ''
+    businessName: '',
   });
   
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -31,22 +36,28 @@ export default function MemberActionModal({ visible, mode, initialData, targetMe
       if (mode === 'EDIT' && initialData) {
         setFormData({
           name: initialData.name || '',
+          phone: initialData.phone || '',
           gender: initialData.gender || 'MALE',
-          dateOfBirth: initialData.dateOfBirth ? new Date(initialData.dateOfBirth).toISOString().split('T')[0] : '',
-          maritalStatus: initialData.maritalStatus || 'SINGLE',
+          dateOfBirth: initialData.dateOfBirth ? new Date(initialData.dateOfBirth) : new Date(),
+          photoUrl: initialData.photoUrl || '',
+          whatsapp: initialData.whatsapp || '',
+          residentialAddress: initialData.residentialAddress || '',
+          businessAddress: initialData.businessAddress || '',
           occupationType: initialData.occupationType || 'OTHER',
-          jobTitle: initialData.jobTitle || '',
-          address: initialData.residentialAddress || ''
+          businessName: initialData.businessName || '',
         });
       } else {
         setFormData({
           name: '',
+          phone: '',
           gender: 'MALE',
-          dateOfBirth: '',
-          maritalStatus: 'SINGLE',
+          dateOfBirth: new Date(),
+          photoUrl: '',
+          whatsapp: '',
+          residentialAddress: '',
+          businessAddress: '',
           occupationType: 'OTHER',
-          jobTitle: '',
-          address: ''
+          businessName: '',
         });
       }
     }
@@ -54,7 +65,11 @@ export default function MemberActionModal({ visible, mode, initialData, targetMe
 
   const handleSave = async () => {
     if (!formData.name) {
-      Alert.alert('Validation Error', 'Name is required');
+      Alert.alert('Validation Error', 'Full Name is required');
+      return;
+    }
+    if (!formData.phone) {
+      Alert.alert('Validation Error', 'Mobile Number is required');
       return;
     }
 
@@ -64,10 +79,7 @@ export default function MemberActionModal({ visible, mode, initialData, targetMe
         'You are adding an heir to this member.\nTheir marital status will be changed from Single to Married.',
         [
           { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Continue', 
-            onPress: () => performSave() 
-          }
+          { text: 'Continue', onPress: () => performSave() }
         ]
       );
     } else {
@@ -78,7 +90,12 @@ export default function MemberActionModal({ visible, mode, initialData, targetMe
   const performSave = async () => {
     try {
       setLoading(true);
-      await onSave(formData, initialData);
+      // Format the date before sending
+      const payload = {
+        ...formData,
+        dateOfBirth: formData.dateOfBirth.toISOString()
+      };
+      await onSave(payload, initialData);
       onClose();
     } catch (e: any) {
       console.error(e);
@@ -86,6 +103,12 @@ export default function MemberActionModal({ visible, mode, initialData, targetMe
     } finally {
       setLoading(false);
     }
+  };
+
+  const onChangeDate = (event: any, selectedDate?: Date) => {
+    const currentDate = selectedDate || formData.dateOfBirth;
+    setShowDatePicker(Platform.OS === 'ios');
+    setFormData({...formData, dateOfBirth: currentDate});
   };
 
   return (
@@ -100,13 +123,44 @@ export default function MemberActionModal({ visible, mode, initialData, targetMe
           </Text>
 
           <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
-            <Text style={styles.label}>Name *</Text>
+            {/* Mandatory Fields */}
+            <Text style={styles.label}>Full Name *</Text>
             <TextInput
               style={styles.input}
               placeholder="Full Name"
               value={formData.name}
               onChangeText={t => setFormData({...formData, name: t})}
             />
+
+            <Text style={styles.label}>Mobile Number *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Mobile Number"
+              keyboardType="phone-pad"
+              value={formData.phone}
+              onChangeText={t => setFormData({...formData, phone: t})}
+            />
+
+            <Text style={styles.label}>Date of Birth *</Text>
+            <TouchableOpacity 
+              style={styles.input}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={{color: formData.dateOfBirth ? colors.textPrimary : '#aaa'}}>
+                 {formData.dateOfBirth ? formData.dateOfBirth.toDateString() : 'Select Date'}
+              </Text>
+            </TouchableOpacity>
+
+            {showDatePicker && (
+              <DateTimePicker
+                testID="dateTimePicker"
+                value={formData.dateOfBirth}
+                mode="date"
+                display="default"
+                onChange={onChangeDate}
+                maximumDate={new Date()}
+              />
+            )}
 
             <Text style={styles.label}>Gender *</Text>
             <View style={styles.row}>
@@ -121,44 +175,63 @@ export default function MemberActionModal({ visible, mode, initialData, targetMe
               ))}
             </View>
 
-            <Text style={styles.label}>Marital Status</Text>
-            <View style={styles.row}>
-              {['SINGLE', 'MARRIED', 'WIDOWED', 'DIVORCED'].map(status => (
-                <TouchableOpacity 
-                  key={status} 
-                  style={[styles.radioBtn, formData.maritalStatus === status && styles.radioBtnActive]}
-                  onPress={() => setFormData({...formData, maritalStatus: status})}
-                >
-                  <Text style={[styles.radioText, formData.maritalStatus === status && styles.radioTextActive]}>
-                    {status}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            {/* Divider */}
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>Optional Fields</Text>
+              <View style={styles.dividerLine} />
             </View>
 
-            <Text style={styles.label}>Date of Birth (YYYY-MM-DD)</Text>
+            {/* Optional Fields */}
+            <Text style={styles.label}>Profile Photo URL</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. 1990-01-01"
-              value={formData.dateOfBirth}
-              onChangeText={t => setFormData({...formData, dateOfBirth: t})}
+              placeholder="Image URL (optional)"
+              value={formData.photoUrl}
+              onChangeText={t => setFormData({...formData, photoUrl: t})}
             />
 
-            <Text style={styles.label}>Job Title / Occupation</Text>
+            <Text style={styles.label}>WhatsApp Number</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. Software Engineer"
-              value={formData.jobTitle}
-              onChangeText={t => setFormData({...formData, jobTitle: t})}
+              placeholder="WhatsApp Number"
+              keyboardType="phone-pad"
+              value={formData.whatsapp}
+              onChangeText={t => setFormData({...formData, whatsapp: t})}
             />
-            
-            <Text style={styles.label}>Address</Text>
+
+            <Text style={styles.label}>Residential Address</Text>
             <TextInput
               style={[styles.input, { height: 80 }]}
               placeholder="Residential Address"
               multiline
-              value={formData.address}
-              onChangeText={t => setFormData({...formData, address: t})}
+              value={formData.residentialAddress}
+              onChangeText={t => setFormData({...formData, residentialAddress: t})}
+            />
+            
+            <Text style={styles.label}>Occupation / Job Title</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Software Engineer"
+              value={formData.occupationType}
+              onChangeText={t => setFormData({...formData, occupationType: t})}
+            />
+
+            <Text style={styles.label}>Business Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Business Name"
+              value={formData.businessName}
+              onChangeText={t => setFormData({...formData, businessName: t})}
+            />
+
+            <Text style={styles.label}>Business Address</Text>
+            <TextInput
+              style={[styles.input, { height: 80 }]}
+              placeholder="Business Address"
+              multiline
+              value={formData.businessAddress}
+              onChangeText={t => setFormData({...formData, businessAddress: t})}
             />
 
           </ScrollView>
@@ -188,7 +261,7 @@ const styles = StyleSheet.create({
     padding: 20, 
     borderTopLeftRadius: 20, 
     borderTopRightRadius: 20,
-    maxHeight: '85%'
+    maxHeight: '90%'
   },
   modalTitle: { 
     fontSize: 20, 
@@ -212,7 +285,8 @@ const styles = StyleSheet.create({
     padding: 12, 
     marginBottom: 16,
     backgroundColor: '#fafafa',
-    color: colors.textPrimary
+    color: colors.textPrimary,
+    justifyContent: 'center'
   },
   row: {
     flexDirection: 'row',
@@ -239,6 +313,22 @@ const styles = StyleSheet.create({
   },
   radioTextActive: {
     color: '#fff'
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e0e0e0'
+  },
+  dividerText: {
+    marginHorizontal: 10,
+    color: '#888',
+    fontSize: 14,
+    fontWeight: '600'
   },
   modalActions: { 
     flexDirection: 'row', 
