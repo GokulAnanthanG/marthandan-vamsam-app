@@ -11,5 +11,20 @@ export const colors = {
   success: '#2E7D32',
   border: '#E0D8C8',
   disabled: '#C0C0C0',
-  text: '#1C231F', // Alias for backward compatibility
+  // Premium Heritage Tokens
+  forestGreen: '#063A2F',
+  darkForest: '#052D24',
+  deepestGreen: '#031F19',
+  warmIvory: '#FBF8F0',
+  cardIvory: '#FFFFFF',
+  softCream: '#F4EFE3',
+  antiqueGold: '#C5A059',
+  lightGold: '#D4AF37',
+  mutedText: '#6B7A74',
+  darkText: '#1B2E28',
+  secondaryText: '#6B7A74',
+  heritageBorder: '#E7E0D2',
+  heritageSuccess: '#4D9A62',
+  heritageSuccessBg: '#DDF1DF',
+  heritageError: '#C94A5A',
 };

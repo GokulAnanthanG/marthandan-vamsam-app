@@ -4,13 +4,18 @@ import { WebView } from 'react-native-webview';
 import { familyTreeApi } from '../../services/api';
 import { WEBVIEW_HTML_V2 } from './webviewHtml';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MemberActionModal, { ActionMode } from '../../components/FamilyTree/MemberActionModal';
 import MemberActionSheet, { ActionSheetOption } from '../../components/FamilyTree/MemberActionSheet';
 import IdentityModal from '../../components/FamilyTree/IdentityModal';
 import { Search, SlidersHorizontal, MapPin, ChevronDown } from 'lucide-react-native';
+import Header from '../../components/common/Header';
 
 export default function FamilyTreeScreen() {
   const { user } = useAuth();
+  const { language, setLanguage } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(false);
   const [trees, setTrees] = useState<any[]>([]);
   const [activeTreeId, setActiveTreeId] = useState<string | null>(null);
@@ -186,21 +191,7 @@ export default function FamilyTreeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Top Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Image source={require('../../assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
-          <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>MARTHANDAN VAMSAM</Text>
-            <Text style={styles.headerSubtitle}>Our Roots. Our Generations. Our Legacy.</Text>
-          </View>
-          <TouchableOpacity style={styles.locationBtn}>
-            <MapPin size={12} color="#fff" style={{marginRight: 4}} />
-            <Text style={styles.locationText}>Marthandan</Text>
-            <ChevronDown size={12} color="#fff" style={{marginLeft: 4}} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <Header />
 
       {/* Main Body Background */}
       <View style={styles.mainBody}>
@@ -210,19 +201,23 @@ export default function FamilyTreeScreen() {
             <Search size={18} color="#888" style={{marginLeft: 12}} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search member..."
+              placeholder="Search..."
               placeholderTextColor="#888"
               value={searchQuery}
               onChangeText={setSearchQuery}
               onSubmitEditing={handleSearch}
             />
           </View>
+          
           <TouchableOpacity style={styles.searchBtn} onPress={handleSearch}>
             <Search size={16} color="#19352D" style={{marginRight: 6}} />
             <Text style={styles.searchBtnText}>Search</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.filterBtn}>
-            <SlidersHorizontal size={18} color="#19352D" />
+
+          <TouchableOpacity style={styles.treeSelectBtn}>
+            <MapPin size={14} color="#19352D" style={{marginRight: 4}} />
+            <Text style={styles.treeSelectText}>Marthandan</Text>
+            <ChevronDown size={14} color="#19352D" style={{marginLeft: 2}} />
           </TouchableOpacity>
         </View>
 
@@ -241,6 +236,12 @@ export default function FamilyTreeScreen() {
             showsHorizontalScrollIndicator={false}
           />
           
+        </View>
+        {/* Sub-Navigation Footer Divider */}
+        <View style={styles.subNavigationFooter}>
+          <View style={styles.subNavLine} />
+          <Text style={styles.subNavText}>குடும்பம்  •  உறவுகள்  •  நிகழ்வுகள்</Text>
+          <View style={styles.subNavLine} />
         </View>
       </View>
 
@@ -297,24 +298,36 @@ export default function FamilyTreeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F2F20' },
-  header: {
-    paddingHorizontal: 16, paddingTop: 50, paddingBottom: 15,
-    backgroundColor: '#0F2F20',
+  container: { flex: 1, backgroundColor: '#F9F7F2' },
+  treeSelectBtn: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', 
+    paddingHorizontal: 12, height: 44, borderRadius: 8, borderWidth: 1, borderColor: '#E5DDCF'
   },
-  headerTop: { flexDirection: 'row', alignItems: 'center' },
-  logo: { width: 40, height: 40, tintColor: '#E1B95B' },
-  headerTitleContainer: { flex: 1, marginLeft: 10 },
-  headerTitle: { fontFamily: 'CormorantGaramond_600SemiBold', fontSize: 16, color: '#E1B95B', letterSpacing: 1 },
-  headerSubtitle: { fontFamily: 'Montserrat_500Medium', fontSize: 10, color: '#FFFFFF', fontStyle: 'italic', marginTop: 2 },
-  locationBtn: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)'
+  treeSelectText: { color: '#19352D', fontSize: 13, fontFamily: 'Montserrat_600SemiBold' },
+  subNavigationFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+    paddingHorizontal: 24,
+    gap: 8,
   },
-  locationText: { color: '#fff', fontSize: 10, fontFamily: 'Montserrat_500Medium' },
+  subNavLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5DDCF',
+  },
+  subNavText: {
+    color: '#7A847F',
+    fontSize: 10,
+    fontWeight: '500',
+    letterSpacing: 0.5,
+    fontFamily: 'Montserrat_500Medium',
+  },
   
   mainBody: {
-    flex: 1, backgroundColor: '#F9F7F2', borderTopLeftRadius: 16, borderTopRightRadius: 16, overflow: 'hidden'
+    flex: 1, backgroundColor: '#F9F7F2', overflow: 'hidden'
   },
   searchSection: {
     flexDirection: 'row', padding: 16, gap: 10, alignItems: 'center',

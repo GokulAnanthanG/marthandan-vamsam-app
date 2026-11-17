@@ -35,7 +35,7 @@ const LeafOrnament = () => (
 
 const LoginScreen = ({ navigation }: any) => {
   const { t } = useLanguage();
-  const { login, guestLogin } = useAuth();
+  const { login } = useAuth();
   const [mobileNumber, setMobileNumber] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
@@ -164,10 +164,10 @@ const LoginScreen = ({ navigation }: any) => {
 
             <TouchableOpacity 
               style={styles.outlineButton}
-              onPress={() => guestLogin()}
+              onPress={() => navigation.navigate('Register')}
             >
               <UserPlus size={16} color="#004831" style={{ marginRight: 8 }} />
-              <Text style={styles.outlineButtonText}>{t('enterAsGuest') || 'Enter as Guest'}</Text>
+              <Text style={styles.outlineButtonText}>{t('register') || 'Register'}</Text>
             </TouchableOpacity>
 
           </View>

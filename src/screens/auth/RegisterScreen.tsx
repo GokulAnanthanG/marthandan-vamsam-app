@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import LanguageToggle from '../../components/common/LanguageToggle';
-import { colors } from '../../theme/colors';
+
 import api from '../../services/api';
 import Svg, { Path, Circle } from 'react-native-svg';
 
@@ -38,15 +38,12 @@ const RegisterScreen = ({ navigation }: any) => {
   
   // Mandatory
   const [fullName, setFullName] = useState('');
+  const [fatherName, setFatherName] = useState('');
+  const [residentialAddress, setResidentialAddress] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState(''); // Simple string for now
-  const [gender, setGender] = useState('MALE');
   
   // Optional
   const [whatsappNumber, setWhatsappNumber] = useState('');
-  const [residentialAddress, setResidentialAddress] = useState('');
   const [businessAddress, setBusinessAddress] = useState('');
   const [occupation, setOccupation] = useState('');
   const [businessName, setBusinessName] = useState('');
@@ -56,12 +53,8 @@ const RegisterScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(false);
 
   const handleSendOtp = async () => {
-    if (!fullName || !mobileNumber || !password || !confirmPassword || !dateOfBirth) {
-      Alert.alert(t('error'), 'Please fill all mandatory fields');
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert(t('error'), t('confirmPassword'));
+    if (!fullName || !fatherName || !residentialAddress || !mobileNumber) {
+      Alert.alert(t('error') || 'Error', 'Please fill all mandatory fields');
       return;
     }
 
@@ -86,14 +79,11 @@ const RegisterScreen = ({ navigation }: any) => {
     try {
       const payload = {
         fullName,
+        fatherName,
+        residentialAddress,
         mobileNumber,
-        password,
-        confirmPassword,
-        dateOfBirth: new Date(dateOfBirth).toISOString(), // Assuming YYYY-MM-DD input for now
-        gender,
         otp,
         whatsappNumber,
-        residentialAddress,
         businessAddress,
         occupation,
         businessName
@@ -138,36 +128,18 @@ const RegisterScreen = ({ navigation }: any) => {
               </View>
             </View>
 
-            <Input label={t('fullName')} value={fullName} onChangeText={setFullName} editable={!otpSent} />
-            <Input label={t('mobileNumber')} value={mobileNumber} onChangeText={setMobileNumber} keyboardType="phone-pad" editable={!otpSent} />
-            <Input label={t('password')} value={password} onChangeText={setPassword} secureTextEntry editable={!otpSent} />
-            <Input label={t('confirmPassword')} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry editable={!otpSent} />
-            <Input label={t('dob')} value={dateOfBirth} onChangeText={setDateOfBirth} placeholder="YYYY-MM-DD" editable={!otpSent} />
+            <Input label={t('fullName') || 'Full Name'} value={fullName} onChangeText={setFullName} editable={!otpSent} />
+            <Input label={t('fatherName') || 'Father Name'} value={fatherName} onChangeText={setFatherName} editable={!otpSent} />
+            <Input label={t('residentialAddress') || 'Address'} value={residentialAddress} onChangeText={setResidentialAddress} editable={!otpSent} />
+            <Input label={t('mobileNumber') || 'Mobile Number'} value={mobileNumber} onChangeText={setMobileNumber} keyboardType="phone-pad" editable={!otpSent} />
             
-            <Text style={styles.label}>{t('gender')}</Text>
-            <View style={styles.genderContainer}>
-              {['MALE', 'FEMALE'].map((g) => (
-                <TouchableOpacity
-                  key={g}
-                  style={[styles.genderButton, gender === g && styles.genderActive]}
-                  onPress={() => setGender(g)}
-                  disabled={otpSent}
-                >
-                  <Text style={[styles.genderText, gender === g && styles.genderTextActive]}>
-                    {t(g.toLowerCase() as any) || g}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
             <View style={styles.divider} />
-            <Text style={styles.optionalTitle}>{t('optionalDetails')}</Text>
+            <Text style={styles.optionalTitle}>{t('optionalDetails') || 'Optional Details'}</Text>
             
-            <Input label={t('whatsapp')} value={whatsappNumber} onChangeText={setWhatsappNumber} keyboardType="phone-pad" editable={!otpSent} />
-            <Input label={t('residentialAddress')} value={residentialAddress} onChangeText={setResidentialAddress} editable={!otpSent} />
-            <Input label={t('businessAddress')} value={businessAddress} onChangeText={setBusinessAddress} editable={!otpSent} />
-            <Input label={t('occupation')} value={occupation} onChangeText={setOccupation} editable={!otpSent} />
-            <Input label={t('businessName')} value={businessName} onChangeText={setBusinessName} editable={!otpSent} />
+            <Input label={t('whatsapp') || 'WhatsApp Number'} value={whatsappNumber} onChangeText={setWhatsappNumber} keyboardType="phone-pad" editable={!otpSent} />
+            <Input label={t('businessAddress') || 'Business Address'} value={businessAddress} onChangeText={setBusinessAddress} editable={!otpSent} />
+            <Input label={t('occupation') || 'Occupation'} value={occupation} onChangeText={setOccupation} editable={!otpSent} />
+            <Input label={t('businessName') || 'Business Name'} value={businessName} onChangeText={setBusinessName} editable={!otpSent} />
 
             {otpSent && (
               <View style={styles.otpSection}>
