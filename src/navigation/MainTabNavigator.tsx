@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, Calendar, Plus, Users, User, Sun, Sparkles, Flower2 } from 'lucide-react-native';
+import { Home, Calendar, Users, User } from 'lucide-react-native';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HomeScreen from '../screens/main/HomeScreen';
@@ -26,7 +26,7 @@ const PlaceholderScreen = ({ name }: { name: string }) => (
 const HeritageBottomNavigation = ({ state, descriptors, navigation }: any) => {
   const insets = useSafeAreaInsets();
   const bottomPadding = Math.max(insets.bottom, 12);
-  const { t } = useLanguage();
+  const { language } = useLanguage();
 
   return (
     <View style={[styles.navContainer, { paddingBottom: bottomPadding }]}>
@@ -49,32 +49,21 @@ const HeritageBottomNavigation = ({ state, descriptors, navigation }: any) => {
           }
         };
 
-        if (route.name === 'AddEventTab') {
-          return (
-            <View key={route.key} style={styles.navItem}>
-              <View style={styles.fabOrnamentContainer}>
-                {/* Pure vector/SVG sunburst halo using Lucide */}
-                <Sun size={110} color="#C5A059" style={{position: 'absolute', opacity: 0.15}} strokeWidth={1} />
-                <Flower2 size={90} color="#C5A059" style={{position: 'absolute', opacity: 0.2, transform: [{rotate: '45deg'}]}} strokeWidth={1} />
-                <Sparkles size={80} color="#C5A059" style={{position: 'absolute', opacity: 0.3}} strokeWidth={1} />
-              </View>
-              <TouchableOpacity
-                style={styles.fabContainer}
-                onPress={onPress}
-                activeOpacity={0.9}
-              >
-                <Plus color="#FFFFFF" size={32} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-          );
-        }
-
         let Icon = Home;
         let label = '';
-        if (route.name === 'HomeTab') { Icon = Home; label = 'முகப்பு'; }
-        if (route.name === 'EventsTab') { Icon = Calendar; label = 'நிகழ்வுகள்'; }
-        if (route.name === 'FamilyTreeTab') { Icon = Users; label = 'குடும்பம்'; }
-        if (route.name === 'ProfileTab') { Icon = User; label = 'பயணர்'; }
+        if (route.name === 'HomeTab') {
+          Icon = Home;
+          label = language === 'ta' ? 'முகப்பு' : 'Home';
+        } else if (route.name === 'EventsTab') {
+          Icon = Calendar;
+          label = language === 'ta' ? 'நிகழ்வுகள்' : 'Events';
+        } else if (route.name === 'FamilyTreeTab') {
+          Icon = Users;
+          label = language === 'ta' ? 'குடும்பம்' : 'Family';
+        } else if (route.name === 'ProfileTab') {
+          Icon = User;
+          label = language === 'ta' ? 'பயனர்' : 'Profile';
+        }
 
         return (
           <TouchableOpacity
@@ -89,7 +78,7 @@ const HeritageBottomNavigation = ({ state, descriptors, navigation }: any) => {
                 size={22} 
                 strokeWidth={isFocused ? 1.5 : 1.5} 
               />
-              {route.name === 'FamilyTreeTab' && (
+              {route.name === 'EventsTab' && (
                 <View style={styles.badgeContainer}>
                   <Text style={styles.badgeText}>2</Text>
                 </View>
@@ -117,16 +106,6 @@ const MainTabNavigator = () => {
     >
       <Tab.Screen name="HomeTab" component={HomeScreen} />
       <Tab.Screen name="EventsTab" component={EventCalendarScreen} />
-      <Tab.Screen 
-        name="AddEventTab" 
-        component={() => null}
-        listeners={({ navigation }) => ({
-          tabPress: (e) => {
-            e.preventDefault();
-            console.log('Central Add Action Triggered');
-          },
-        })}
-      />
       <Tab.Screen name="FamilyTreeTab" component={FamilyTreeScreen} />
       <Tab.Screen name="ProfileTab" component={ProfileScreen} />
     </Tab.Navigator>
@@ -189,35 +168,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#C5A059', // Antique gold
     position: 'absolute',
     bottom: -6,
-  },
-  fabOrnamentContainer: {
-    position: 'absolute',
-    top: -50,
-    alignSelf: 'center',
-    width: 120,
-    height: 120,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 9,
-  },
-  fabContainer: {
-    position: 'absolute',
-    top: -26,
-    alignSelf: 'center',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#C5A059', // Gold background
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 8,
-    zIndex: 10,
-    borderWidth: 2,
-    borderColor: '#063A2F', // Outer deep green stroke matching navbar
   },
   badgeContainer: {
     position: 'absolute', 
