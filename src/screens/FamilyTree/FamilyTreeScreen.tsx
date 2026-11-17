@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Text, TextInput, Image } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Text, TextInput, Image, ScrollView } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { familyTreeApi } from '../../services/api';
 import { WEBVIEW_HTML_V2 } from './webviewHtml';
@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MemberActionModal, { ActionMode } from '../../components/FamilyTree/MemberActionModal';
 import MemberActionSheet, { ActionSheetOption } from '../../components/FamilyTree/MemberActionSheet';
 import IdentityModal from '../../components/FamilyTree/IdentityModal';
-import { Search, SlidersHorizontal, MapPin, ChevronDown } from 'lucide-react-native';
+import { Search, SlidersHorizontal, MapPin, ChevronDown, X } from 'lucide-react-native';
 import Header from '../../components/common/Header';
 
 export default function FamilyTreeScreen() {
@@ -22,7 +22,7 @@ export default function FamilyTreeScreen() {
   const [treeData, setTreeData] = useState<any>(null);
   
   const [history, setHistory] = useState<{rootId?: string, name: string}[]>([]);
-  const webviewRef = useRef<WebView>(null);
+  const webviewRef = useRef<any>(null);
 
   const [actionMode, setActionMode] = useState<ActionMode>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -31,6 +31,9 @@ export default function FamilyTreeScreen() {
   const [guestIdentityData, setGuestIdentityData] = useState<any>(null);
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showResultsDropdown, setShowResultsDropdown] = useState(false);
 
   const generateActionOptions = (member: any): ActionSheetOption[] => {
     if (!member) return [];
@@ -129,18 +132,64 @@ export default function FamilyTreeScreen() {
     }
   }, [treeData]);
 
-  const handleSearch = async () => {
-    if (!activeTreeId || !searchQuery) return;
+  const selectMemberAndHighlight = async (targetMember: any) => {
     try {
-      const res = await familyTreeApi.searchMembers(activeTreeId, searchQuery);
-      const results = res.data?.data;
+      setShowResultsDropdown(false);
+      setSearchQuery(targetMember.name);
+
+      const isAlreadyInTree = treeData?.members?.some((m: any) => m._id === targetMember._id);
+
+      if (isAlreadyInTree) {
+        webviewRef.current?.postMessage(JSON.stringify({
+          type: 'HIGHLIGHT_NODE',
+          memberId: targetMember._id
+        }));
+      } else if (activeTreeId) {
+        setLoading(true);
+        const res = await familyTreeApi.getTreeBranch(activeTreeId, undefined, targetMember._id);
+        const newBranchData = res.data?.data;
+        if (newBranchData) {
+          setTreeData(newBranchData);
+          setTimeout(() => {
+            webviewRef.current?.postMessage(JSON.stringify({
+              type: 'HIGHLIGHT_NODE',
+              memberId: targetMember._id
+            }));
+          }, 350);
+        }
+      }
+    } catch (err) {
+      console.error('Focus member error', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!activeTreeId || !searchQuery.trim()) return;
+    try {
+      setIsSearching(true);
+      const res = await familyTreeApi.searchMembers(activeTreeId, searchQuery.trim());
+      const results = res.data?.data || [];
       if (results && results.length > 0) {
-        webviewRef.current?.postMessage(JSON.stringify({ type: 'HIGHLIGHT_NODE', memberId: results[0]._id }));
+        setSearchResults(results);
+        if (results.length === 1) {
+          setShowResultsDropdown(false);
+          await selectMemberAndHighlight(results[0]);
+        } else {
+          setShowResultsDropdown(true);
+          await selectMemberAndHighlight(results[0]);
+        }
       } else {
-        Alert.alert('Search', 'No members found');
+        setSearchResults([]);
+        setShowResultsDropdown(false);
+        Alert.alert('Search', `No members found matching "${searchQuery.trim()}"`);
       }
     } catch(e) {
       console.error('Search error', e);
+      Alert.alert('Search Error', 'Failed to search members. Please check connection.');
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -204,14 +253,43 @@ export default function FamilyTreeScreen() {
               placeholder="Search..."
               placeholderTextColor="#888"
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChangeText={(text) => {
+                setSearchQuery(text);
+                if (!text.trim()) {
+                  setSearchResults([]);
+                  setShowResultsDropdown(false);
+                }
+              }}
               onSubmitEditing={handleSearch}
+              returnKeyType="search"
             />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  setSearchQuery('');
+                  setSearchResults([]);
+                  setShowResultsDropdown(false);
+                }}
+                style={{ padding: 8, marginRight: 4 }}
+              >
+                <X size={16} color="#888" />
+              </TouchableOpacity>
+            )}
           </View>
           
-          <TouchableOpacity style={styles.searchBtn} onPress={handleSearch}>
-            <Search size={16} color="#19352D" style={{marginRight: 6}} />
-            <Text style={styles.searchBtnText}>Search</Text>
+          <TouchableOpacity 
+            style={styles.searchBtn} 
+            onPress={handleSearch}
+            disabled={isSearching}
+          >
+            {isSearching ? (
+              <ActivityIndicator size="small" color="#19352D" />
+            ) : (
+              <>
+                <Search size={16} color="#19352D" style={{marginRight: 6}} />
+                <Text style={styles.searchBtnText}>Search</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.treeSelectBtn}>
@@ -220,6 +298,44 @@ export default function FamilyTreeScreen() {
             <ChevronDown size={14} color="#19352D" style={{marginLeft: 2}} />
           </TouchableOpacity>
         </View>
+
+        {/* Search Results Dropdown */}
+        {showResultsDropdown && searchResults.length > 0 && (
+          <View style={styles.searchResultsDropdown}>
+            <View style={styles.resultsHeader}>
+              <Text style={styles.resultsCountText}>
+                {searchResults.length} {searchResults.length === 1 ? 'member' : 'members'} found
+              </Text>
+              <TouchableOpacity onPress={() => setShowResultsDropdown(false)} style={{ padding: 4 }}>
+                <X size={16} color="#718078" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.resultsList} keyboardShouldPersistTaps="handled">
+              {searchResults.map((item) => (
+                <TouchableOpacity
+                  key={item._id}
+                  style={styles.resultItem}
+                  onPress={() => selectMemberAndHighlight(item)}
+                >
+                  <View 
+                    style={[
+                      styles.resultGenderIndicator, 
+                      { backgroundColor: item.gender === 'FEMALE' ? '#F06292' : '#42A5F5' }
+                    ]} 
+                  />
+                  <View style={styles.resultInfo}>
+                    <Text style={styles.resultName}>{item.name}</Text>
+                    {item.jobTitle ? (
+                      <Text style={styles.resultSub}>{item.jobTitle}</Text>
+                    ) : (
+                      <Text style={styles.resultSub}>{item.gender === 'FEMALE' ? 'Female' : 'Male'}</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* WebView */}
         <View style={styles.webviewContainer}>
@@ -349,5 +465,70 @@ const styles = StyleSheet.create({
   
   webviewContainer: { flex: 1, position: 'relative', backgroundColor: '#F9F7F2' },
   webview: { flex: 1, backgroundColor: 'transparent' },
-  loader: { position: 'absolute', top: '50%', left: '50%', zIndex: 10, marginLeft: -18, marginTop: -18 }
+  loader: { position: 'absolute', top: '50%', left: '50%', zIndex: 10, marginLeft: -18, marginTop: -18 },
+
+  searchResultsDropdown: {
+    position: 'absolute',
+    top: 68,
+    left: 16,
+    right: 16,
+    maxHeight: 240,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5DDCF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 999,
+    overflow: 'hidden',
+  },
+  resultsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#F9F7F2',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5DDCF',
+  },
+  resultsCountText: {
+    fontSize: 12,
+    fontFamily: 'Montserrat_600SemiBold',
+    color: '#718078',
+  },
+  resultsList: {
+    maxHeight: 190,
+  },
+  resultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0ECE4',
+  },
+  resultGenderIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 10,
+  },
+  resultInfo: {
+    flex: 1,
+  },
+  resultName: {
+    fontSize: 14,
+    fontFamily: 'Montserrat_600SemiBold',
+    color: '#19352D',
+  },
+  resultSub: {
+    fontSize: 11,
+    fontFamily: 'Montserrat_500Medium',
+    color: '#718078',
+    marginTop: 1,
+  },
 });

@@ -37,7 +37,7 @@ const PersonCard = ({ member, isSpouse = false, highlighted = false }: { member:
   }
 
   return (
-    <div className={`person-card ${isSpouse ? 'spouse' : ''} ${highlighted && !isSpouse ? 'highlighted' : ''}`} style={{ borderTopColor: borderColor }} onClick={() => (window as any).ReactNativeWebView?.postMessage(JSON.stringify({ type: 'NODE_CLICK', memberId: member._id }))}>
+    <div className={`person-card ${isSpouse ? 'spouse' : ''} ${highlighted ? 'highlighted' : ''}`} style={{ borderTopColor: borderColor }} onClick={() => (window as any).ReactNativeWebView?.postMessage(JSON.stringify({ type: 'NODE_CLICK', memberId: member._id }))}>
       
       {isFounder && (
         <div className="crown-icon">
@@ -64,18 +64,27 @@ const PersonCard = ({ member, isSpouse = false, highlighted = false }: { member:
   );
 };
 
-export default function PersonNode({ data }: { data: { member: MemberData, spouse?: MemberData, highlighted?: boolean, hasParent?: boolean, hasChildren?: boolean } }) {
+export default function PersonNode({ data }: { data: { member: MemberData, spouse?: MemberData, highlighted?: boolean, highlightedMemberId?: string | null, hasParent?: boolean, hasChildren?: boolean } }) {
+  const isPrimaryHighlighted = Boolean(
+    data.highlightedMemberId
+      ? data.highlightedMemberId === data.member._id
+      : data.highlighted
+  );
+  const isSpouseHighlighted = Boolean(
+    data.spouse && data.highlightedMemberId === data.spouse._id
+  );
+
   return (
     <div className="person-node-container">
       {data.hasParent && <Handle type="target" position={Position.Top} className="handle top" />}
       
       <div className="node-content">
-        <PersonCard member={data.member} highlighted={data.highlighted} />
+        <PersonCard member={data.member} highlighted={isPrimaryHighlighted} />
         
         {data.spouse && (
           <>
             <div className="spouse-connector" />
-            <PersonCard member={data.spouse} isSpouse={true} />
+            <PersonCard member={data.spouse} isSpouse={true} highlighted={isSpouseHighlighted} />
           </>
         )}
       </div>

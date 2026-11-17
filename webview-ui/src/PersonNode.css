@@ -179,7 +179,18 @@
 }
 
 .person-card.highlighted {
-  box-shadow: 0 0 0 3px rgba(201, 168, 90, 0.4);
+  box-shadow: 0 0 0 4px #C9A85A, 0 8px 24px rgba(201, 168, 90, 0.45) !important;
+  animation: pulse-card-highlight 1.5s ease-in-out infinite alternate;
+  z-index: 10;
+}
+
+@keyframes pulse-card-highlight {
+  0% {
+    box-shadow: 0 0 0 3px #C9A85A, 0 4px 12px rgba(201, 168, 90, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 6px #C9A85A, 0 10px 28px rgba(201, 168, 90, 0.6);
+  }
 }
 
 .legacy-loader {

@@ -70,8 +70,12 @@ api.interceptors.response.use(
 export const familyTreeApi = {
   createTree: (data: any) => api.post('/family-trees', data),
   getTrees: () => api.get('/family-trees'),
-  getTreeBranch: (treeId: string, rootMemberId?: string) => 
-    api.get(`/family-trees/${treeId}/tree${rootMemberId ? `?rootMemberId=${rootMemberId}` : ''}`),
+  getTreeBranch: (treeId: string, rootMemberId?: string, focusMemberId?: string) => {
+    const params: Record<string, string> = {};
+    if (rootMemberId) params.rootMemberId = rootMemberId;
+    if (focusMemberId) params.focusMemberId = focusMemberId;
+    return api.get(`/family-trees/${treeId}/tree`, { params });
+  },
   addMember: (treeId: string, data: any) => api.post(`/family-trees/${treeId}/members`, data),
   addChild: (treeId: string, parentId: string, data: any) => api.post(`/family-trees/${treeId}/members/${parentId}/children`, data),
   updateMember: (memberId: string, data: any) => api.put(`/family-trees/members/${memberId}`, data),
@@ -91,7 +95,7 @@ export const familyTreeApi = {
   getDeletedMembers: (treeId: string) =>
     api.get(`/family-trees/${treeId}/deleted-members`),
   searchMembers: (treeId: string, query: string) =>
-    api.get(`/family-trees/${treeId}/members/search?q=${query}`),
+    api.get(`/family-trees/${treeId}/members/search`, { params: { q: query } }),
 };
 
 export const familyMediaApi = {

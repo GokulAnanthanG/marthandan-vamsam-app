@@ -33,7 +33,7 @@ export default function App() {
     return () => window.removeEventListener('NODE_LOADING', handleNodeLoading as any);
   }, []);
 
-  const processTreeData = (treeData: any) => {
+  const processTreeData = (treeData: any, highlightMemberId?: string | null) => {
     if (!treeData || !treeData.members) return;
 
     const newNodes: Node[] = [];
@@ -71,11 +71,22 @@ export default function App() {
       const hasParent = relationships.some((rel: any) => rel.relationshipType === 'PARENT_CHILD' && (rel.childMemberId === member._id || (spouseId && rel.childMemberId === spouseId)));
       const hasChildren = relationships.some((rel: any) => rel.relationshipType === 'PARENT_CHILD' && (rel.parentMemberId === member._id || (spouseId && rel.parentMemberId === spouseId)));
 
+      const isPrimaryMatch = Boolean(highlightMemberId && highlightMemberId === member._id);
+      const isSpouseMatch = Boolean(highlightMemberId && spouseData && highlightMemberId === spouseData._id);
+      const isMatch = isPrimaryMatch || isSpouseMatch;
+
       newNodes.push({
         id: member._id,
         type: 'person',
         position: { x: 0, y: 0 },
-        data: { member, spouse: spouseData, highlighted: false, hasParent, hasChildren },
+        data: {
+          member,
+          spouse: spouseData,
+          highlighted: isMatch,
+          highlightedMemberId: isMatch ? highlightMemberId : null,
+          hasParent,
+          hasChildren
+        },
         sourcePosition: Position.Bottom,
         targetPosition: Position.Top,
         draggable: false,
@@ -113,7 +124,16 @@ export default function App() {
     setNodes(layoutedNodes);
     setEdges(layoutedEdges);
 
-    if (loadingNodeIdRef.current && reactFlowInstance) {
+    if (highlightMemberId && reactFlowInstance) {
+      const targetNode = layoutedNodes.find((n: Node) => n.id === highlightMemberId || (n.data as any)?.spouse?._id === highlightMemberId);
+      if (targetNode) {
+        const isSpouse = (targetNode.data as any)?.spouse?._id === highlightMemberId;
+        const offsetX = isSpouse ? 220 : 100;
+        setTimeout(() => {
+          reactFlowInstance.setCenter(targetNode.position.x + offsetX, targetNode.position.y + 60, { zoom: 1.4, duration: 800 });
+        }, 150);
+      }
+    } else if (loadingNodeIdRef.current && reactFlowInstance) {
       const targetNode = layoutedNodes.find((n: Node) => n.id === loadingNodeIdRef.current);
       if (targetNode) {
         setTimeout(() => {
@@ -135,21 +155,35 @@ export default function App() {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'SET_TREE_DATA') {
-          processTreeData(data.payload);
+          processTreeData(data.payload, data.highlightMemberId || null);
         } else if (data.type === 'HIGHLIGHT_NODE') {
-          setNodes((nds) => nds.map((n) => {
-            if (n.id === data.memberId) {
-              return { ...n, data: { ...n.data, highlighted: true } };
-            }
-            return { ...n, data: { ...n.data, highlighted: false } };
-          }));
+          const targetId = data.memberId;
+          setNodes((nds) => {
+            const updated = nds.map((n) => {
+              const isPrimary = n.id === targetId;
+              const isSpouse = (n.data as any)?.spouse?._id === targetId;
+              const isMatch = isPrimary || isSpouse;
+              return {
+                ...n,
+                data: {
+                  ...n.data,
+                  highlighted: isMatch,
+                  highlightedMemberId: isMatch ? targetId : null
+                }
+              };
+            });
 
-          if (reactFlowInstance) {
-            const node = reactFlowInstance.getNode(data.memberId);
-            if (node) {
-              reactFlowInstance.setCenter(node.position.x + 110, node.position.y + 60, { zoom: 1.5, duration: 800 });
+            if (reactFlowInstance) {
+              const node = nds.find((n) => n.id === targetId || (n.data as any)?.spouse?._id === targetId);
+              if (node) {
+                const isSpouse = (node.data as any)?.spouse?._id === targetId;
+                const offsetX = isSpouse ? 220 : 100;
+                reactFlowInstance.setCenter(node.position.x + offsetX, node.position.y + 60, { zoom: 1.4, duration: 800 });
+              }
             }
-          }
+
+            return updated;
+          });
         }
       } catch (e) {
         console.error('Failed to parse message', e);
