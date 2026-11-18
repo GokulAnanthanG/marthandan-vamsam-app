@@ -37,5 +37,14 @@
   "verifyLogin": "Verify & Login",
   "verifying": "Verifying...",
   "privacyNote": "We will never share your number",
-  "noAccount": "Don't have an account? "
+  "noAccount": "Don't have an account? ",
+  "quickAccess": "Quick Access",
+  "birthdays": "Birthdays",
+  "houseLocations": "House Locations",
+  "jobsBusiness": "Jobs & Business",
+  "shopLocations": "Shop Locations",
+  "marriageAgeList": "Marriage Age List",
+  "downloads": "Downloads",
+  "more": "More",
+  "togetherGrow": "Together We Grow,\nTogether We Stay Connected"
 }

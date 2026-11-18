@@ -37,5 +37,14 @@
   "verifyLogin": "சரிபார்த்து உள்நுழைய",
   "verifying": "சரிபார்க்கப்படுகிறது...",
   "privacyNote": "உங்கள் எண்ணை நாங்கள் பகிர மாட்டோம்",
-  "noAccount": "கணக்கு இல்லையா? "
+  "noAccount": "கணக்கு இல்லையா? ",
+  "quickAccess": "விரைவு அணுகல்",
+  "birthdays": "பிறந்தநாட்கள்",
+  "houseLocations": "இல்லங்கள்",
+  "jobsBusiness": "தொழில் & வேலை",
+  "shopLocations": "வணிகக் கடைகள்",
+  "marriageAgeList": "திருமண வரன்",
+  "downloads": "பதிவிறக்கங்கள்",
+  "more": "மேலும்",
+  "togetherGrow": "ஒன்றாக வளர்வோம்,\nஇணைந்தே இருப்போம்"
 }
