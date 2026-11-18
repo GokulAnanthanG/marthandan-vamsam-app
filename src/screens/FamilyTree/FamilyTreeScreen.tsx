@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Text, TextInput, Image, ScrollView } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Text, TextInput, Image, ScrollView, Modal } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { familyTreeApi } from '../../services/api';
 import { WEBVIEW_HTML_V2 } from './webviewHtml';
@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MemberActionModal, { ActionMode } from '../../components/FamilyTree/MemberActionModal';
 import MemberActionSheet, { ActionSheetOption } from '../../components/FamilyTree/MemberActionSheet';
 import IdentityModal from '../../components/FamilyTree/IdentityModal';
-import { Search, SlidersHorizontal, MapPin, ChevronDown, X } from 'lucide-react-native';
+import { Search, SlidersHorizontal, Network, ChevronDown, X, Check } from 'lucide-react-native';
 import Header from '../../components/common/Header';
 
 export default function FamilyTreeScreen() {
@@ -20,6 +20,7 @@ export default function FamilyTreeScreen() {
   const [trees, setTrees] = useState<any[]>([]);
   const [activeTreeId, setActiveTreeId] = useState<string | null>(null);
   const [treeData, setTreeData] = useState<any>(null);
+  const [treeModalVisible, setTreeModalVisible] = useState(false);
   
   const [history, setHistory] = useState<{rootId?: string, name: string}[]>([]);
   const webviewRef = useRef<any>(null);
@@ -125,6 +126,22 @@ export default function FamilyTreeScreen() {
   useEffect(() => {
     loadTrees();
   }, []);
+
+  const handleSelectTree = (tree: any) => {
+    if (!tree) return;
+    if (tree._id !== activeTreeId) {
+      setActiveTreeId(tree._id);
+      setSearchQuery('');
+      setSearchResults([]);
+      setShowResultsDropdown(false);
+      setHistory([{ name: 'Complete Tree' }]);
+      loadBranch(tree._id);
+    }
+    setTreeModalVisible(false);
+  };
+
+  const activeTree = trees.find((t: any) => t._id === activeTreeId) || (trees.length > 0 ? trees[0] : null);
+  const activeTreeName = activeTree?.name || 'Marthandan';
 
   useEffect(() => {
     if (treeData && webviewRef.current) {
@@ -292,9 +309,20 @@ export default function FamilyTreeScreen() {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.treeSelectBtn}>
-            <MapPin size={14} color="#19352D" style={{marginRight: 4}} />
-            <Text style={styles.treeSelectText}>Marthandan</Text>
+          <TouchableOpacity 
+            style={styles.treeSelectBtn}
+            onPress={() => {
+              if (trees.length === 0) {
+                loadTrees();
+              }
+              setTreeModalVisible(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <Network size={14} color="#19352D" style={{marginRight: 4}} />
+            <Text style={styles.treeSelectText} numberOfLines={1} ellipsizeMode="tail">
+              {activeTreeName}
+            </Text>
             <ChevronDown size={14} color="#19352D" style={{marginLeft: 2}} />
           </TouchableOpacity>
         </View>
@@ -409,6 +437,84 @@ export default function FamilyTreeScreen() {
            }
         }}
       />
+
+      {/* Tree Selection Modal */}
+      <Modal
+        visible={treeModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTreeModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.treeModalOverlay}
+          activeOpacity={1}
+          onPress={() => setTreeModalVisible(false)}
+        >
+          <View style={styles.treeModalCard} onStartShouldSetResponder={() => true}>
+            <View style={styles.treeModalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                <View style={styles.treeModalIconWrap}>
+                  <Network size={18} color="#C5A059" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.treeModalTitle}>
+                    {language === 'ta' ? 'குடும்ப மரத்தைத் தேர்வு செய்க' : 'Select Family Tree'}
+                  </Text>
+                  <Text style={styles.treeModalSubtitle}>
+                    {language === 'ta' ? 'பார்க்க வேண்டிய வம்ச மரத்தைத் தேர்ந்தெடுக்கவும்' : 'Choose a lineage to view'}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setTreeModalVisible(false)} style={{ padding: 4 }}>
+                <X size={20} color="#718078" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.treeList} showsVerticalScrollIndicator={false}>
+              {trees.length === 0 ? (
+                <View style={{ padding: 24, alignItems: 'center' }}>
+                  <Text style={{ color: '#718078', fontSize: 13, fontFamily: 'Montserrat_500Medium' }}>
+                    {language === 'ta' ? 'மரங்கள் எதுவும் கிடைக்கவில்லை' : 'No family trees found'}
+                  </Text>
+                </View>
+              ) : (
+                trees.map((tree: any) => {
+                  const isSelected = tree._id === activeTreeId;
+                  return (
+                    <TouchableOpacity
+                      key={tree._id}
+                      style={[
+                        styles.treeItemCard,
+                        isSelected && styles.treeItemCardSelected
+                      ]}
+                      onPress={() => handleSelectTree(tree)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.treeItemName, isSelected && styles.treeItemNameSelected]}>
+                          {tree.name}
+                        </Text>
+                        {tree.description ? (
+                          <Text style={styles.treeItemDesc} numberOfLines={2}>
+                            {tree.description}
+                          </Text>
+                        ) : null}
+                      </View>
+                      {isSelected ? (
+                        <View style={styles.checkBadge}>
+                          <Check size={14} color="#FFFFFF" strokeWidth={2.5} />
+                        </View>
+                      ) : (
+                        <View style={styles.uncheckBadge} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -417,9 +523,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9F7F2' },
   treeSelectBtn: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', 
-    paddingHorizontal: 12, height: 44, borderRadius: 8, borderWidth: 1, borderColor: '#E5DDCF'
+    paddingHorizontal: 10, height: 44, borderRadius: 8, borderWidth: 1, borderColor: '#E5DDCF',
+    maxWidth: 140
   },
-  treeSelectText: { color: '#19352D', fontSize: 13, fontFamily: 'Montserrat_600SemiBold' },
+  treeSelectText: { color: '#19352D', fontSize: 13, fontFamily: 'Montserrat_600SemiBold', maxWidth: 85 },
   subNavigationFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -530,5 +637,104 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat_500Medium',
     color: '#718078',
     marginTop: 1,
+  },
+
+  treeModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  treeModalCard: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
+    maxHeight: '80%',
+  },
+  treeModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0ECE4',
+  },
+  treeModalIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F9F7F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5DDCF',
+  },
+  treeModalTitle: {
+    fontSize: 16,
+    fontFamily: 'Montserrat_600SemiBold',
+    color: '#19352D',
+  },
+  treeModalSubtitle: {
+    fontSize: 11,
+    fontFamily: 'Montserrat_500Medium',
+    color: '#718078',
+    marginTop: 2,
+  },
+  treeList: {
+    maxHeight: 320,
+  },
+  treeItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5DDCF',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 10,
+  },
+  treeItemCardSelected: {
+    borderColor: '#063A2F',
+    backgroundColor: '#F4F7F5',
+  },
+  treeItemName: {
+    fontSize: 15,
+    fontFamily: 'Montserrat_600SemiBold',
+    color: '#19352D',
+  },
+  treeItemNameSelected: {
+    color: '#063A2F',
+  },
+  treeItemDesc: {
+    fontSize: 12,
+    fontFamily: 'Montserrat_500Medium',
+    color: '#718078',
+    marginTop: 4,
+  },
+  checkBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#063A2F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  uncheckBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#D0C8B8',
+    marginLeft: 12,
   },
 });
