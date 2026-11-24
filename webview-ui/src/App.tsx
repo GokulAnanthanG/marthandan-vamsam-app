@@ -143,6 +143,8 @@ export default function App() {
       }
     }
 
+    window.dispatchEvent(new CustomEvent('TREE_DATA_UPDATED'));
+
     setTimeout(() => {
       if ((window as any).ReactNativeWebView) {
         (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: 'RENDER_COMPLETE' }));

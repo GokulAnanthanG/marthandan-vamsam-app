@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import './PersonNode.css';
 
@@ -17,6 +17,27 @@ const PersonCard = ({ member, isSpouse = false, highlighted = false }: { member:
   const borderColor = member.gender === 'FEMALE' ? '#F06292' : member.gender === 'MALE' ? '#42A5F5' : '#E5DDCF';
   const initial = member.name ? member.name.charAt(0).toUpperCase() : '';
   const isFounder = member.jobTitle?.toLowerCase() === 'founder';
+
+  useEffect(() => {
+    if (!member.isFadedSkeleton) {
+      setIsLoading(false);
+    }
+  }, [member.isFadedSkeleton]);
+
+  useEffect(() => {
+    const handleLoaded = () => setIsLoading(false);
+    window.addEventListener('TREE_DATA_UPDATED', handleLoaded);
+    let timer: any;
+    if (isLoading) {
+      timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 5000);
+    }
+    return () => {
+      window.removeEventListener('TREE_DATA_UPDATED', handleLoaded);
+      if (timer) clearTimeout(timer);
+    };
+  }, [isLoading]);
 
   if (member.isFadedSkeleton) {
     return (

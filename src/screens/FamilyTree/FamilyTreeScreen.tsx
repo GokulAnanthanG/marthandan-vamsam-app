@@ -217,21 +217,21 @@ export default function FamilyTreeScreen() {
         webviewRef.current?.postMessage(JSON.stringify({ type: 'SET_TREE_DATA', payload: treeData }));
       } else if (data.type === 'LOAD_MORE') {
         if (activeTreeId) {
-           const res = await familyTreeApi.getTreeBranch(activeTreeId, data.memberId);
+           const res = await familyTreeApi.getTreeBranch(activeTreeId, undefined, data.memberId);
            if (res.data?.data) {
              const newBranch = res.data.data;
              setTreeData((prev: any) => {
                 if (!prev) return newBranch;
-                const existingIds = new Set(prev.members.map((m:any) => m._id));
+                const existingIds = new Set(prev.members.map((m:any) => String(m._id)));
                 const members = prev.members.map((m:any) => {
-                  const newM = newBranch.members.find((nm:any) => nm._id === m._id);
-                  if (newM && m.isFadedSkeleton) {
+                  const newM = newBranch.members.find((nm:any) => String(nm._id) === String(m._id));
+                  if (newM && m.isFadedSkeleton && !newM.isFadedSkeleton) {
                     return { ...newM, isFadedSkeleton: false };
                   }
                   return m;
                 });
                 
-                const newlyAddedMembers = newBranch.members.filter((m:any) => !existingIds.has(m._id));
+                const newlyAddedMembers = newBranch.members.filter((m:any) => !existingIds.has(String(m._id)));
                 const existingRelIds = new Set(prev.relationships.map((r:any) => `${r.parentMemberId}-${r.childMemberId}-${r.relationshipType}`));
                 const newlyAddedRels = newBranch.relationships.filter((r:any) => !existingRelIds.has(`${r.parentMemberId}-${r.childMemberId}-${r.relationshipType}`));
 
@@ -428,12 +428,26 @@ export default function FamilyTreeScreen() {
            } else {
              // Direct Add/Edit API (Admin)
              if (actionMode === 'CHILD') {
-               await familyTreeApi.addChild(activeTreeId!, selectedMember._id, data);
+               const res = await familyTreeApi.addChild(activeTreeId!, selectedMember._id, data);
+               const newChild = res.data?.data;
+               const parentId = selectedMember._id;
+               // Fetch branch focusing on parent so parent and all children are fully loaded
+               const branchRes = await familyTreeApi.getTreeBranch(activeTreeId!, undefined, parentId);
+               if (branchRes.data?.data) {
+                 setTreeData(branchRes.data.data);
+                 setTimeout(() => {
+                   webviewRef.current?.postMessage(JSON.stringify({
+                     type: 'HIGHLIGHT_NODE',
+                     memberId: newChild?._id || parentId
+                   }));
+                 }, 350);
+               } else {
+                 loadBranch(activeTreeId!);
+               }
              } else if (actionMode === 'EDIT') {
                await familyTreeApi.updateMember(selectedMember._id, data);
+               loadBranch(activeTreeId!);
              }
-             // Reload branch
-             loadBranch(activeTreeId!);
            }
         }}
       />
