@@ -29,6 +29,7 @@ import {
   LogOut,
   ChevronRight,
   Sparkles,
+  ShieldCheck,
 } from 'lucide-react-native';
 
 const logoImg = require('../../assets/images/logo.png');
@@ -88,7 +89,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       icon: MapPin,
       iconBg: '#EFF6FF',
       iconColor: '#3B82F6',
-      onPress: () => setActiveModal('houseLocations'),
+      onPress: () => navigation?.navigate('HouseDirectory'),
     },
     {
       id: 'jobsBusiness',
@@ -96,7 +97,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       icon: Briefcase,
       iconBg: '#FFF7ED',
       iconColor: '#F97316',
-      onPress: () => setActiveModal('jobsBusiness'),
+      onPress: () => navigation?.navigate('BusinessWorkDirectory', { initialTab: 'work' }),
     },
     {
       id: 'shopLocations',
@@ -104,7 +105,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       icon: Store,
       iconBg: '#F0FDFA',
       iconColor: '#0D9488',
-      onPress: () => setActiveModal('shopLocations'),
+      onPress: () => navigation?.navigate('BusinessWorkDirectory', { initialTab: 'business' }),
     },
     {
       id: 'marriageAgeList',
@@ -112,7 +113,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       icon: Heart,
       iconBg: '#FDF2F8',
       iconColor: '#EC4899',
-      onPress: () => setActiveModal('marriageAgeList'),
+      onPress: () => navigation?.navigate('MatrimonialDirectory'),
     },
     {
       id: 'downloads',
@@ -166,7 +167,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.bellButton}
-            onPress={() => setActiveModal('notifications')}
+            onPress={() => navigation?.navigate('NotificationScreen')}
             activeOpacity={0.7}
           >
             <Bell size={21} color="#19352D" />
@@ -299,6 +300,22 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                       <Calendar size={18} color="#063A2F" />
                       <Text style={styles.moreOptionText}>
                         {language === 'ta' ? 'நிகழ்வுகள் நாள்காட்டி' : 'Events Calendar'}
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color="#C0B8A8" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.moreOptionItem}
+                    onPress={() => {
+                      setActiveModal(null);
+                      navigation?.navigate('AccessRequestManagement');
+                    }}
+                  >
+                    <View style={styles.moreOptionLeft}>
+                      <ShieldCheck size={18} color="#063A2F" />
+                      <Text style={styles.moreOptionText}>
+                        {language === 'ta' ? 'அணுகல் அனுமதி கோரிக்கைகள்' : 'Access Request Management'}
                       </Text>
                     </View>
                     <ChevronRight size={18} color="#C0B8A8" />

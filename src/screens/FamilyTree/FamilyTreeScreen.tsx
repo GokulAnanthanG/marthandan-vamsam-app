@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Text, TextInput, Image, ScrollView, Modal } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Text, TextInput, Image, ScrollView, Modal, Linking } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { familyTreeApi } from '../../services/api';
 import { WEBVIEW_HTML_V2 } from './webviewHtml';
@@ -80,6 +80,26 @@ export default function FamilyTreeScreen() {
         setModalVisible(true);
       }
     });
+
+    if (member?.homeGoogleMapUrl || member?.residentialAddress) {
+      options.push({
+        label: 'View Home on Google Maps',
+        onPress: () => {
+          const url = member.homeGoogleMapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(member.residentialAddress)}`;
+          Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to open Google Maps'));
+        }
+      });
+    }
+
+    if (member?.businessGoogleMapUrl || member?.businessAddress) {
+      options.push({
+        label: 'View Business on Google Maps',
+        onPress: () => {
+          const url = member.businessGoogleMapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([member.businessName, member.businessAddress].filter(Boolean).join(', '))}`;
+          Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to open Google Maps'));
+        }
+      });
+    }
 
     return options;
   };

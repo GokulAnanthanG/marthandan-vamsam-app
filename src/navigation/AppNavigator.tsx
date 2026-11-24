@@ -6,6 +6,11 @@ import { useAuth } from '../context/AuthContext';
 import AuthNavigator from './AuthNavigator';
 import MainTabNavigator from './MainTabNavigator';
 import SpecialGuestRequestScreen from '../screens/main/SpecialGuestRequestScreen';
+import HouseDirectoryScreen from '../screens/main/HouseDirectoryScreen';
+import BusinessWorkDirectoryScreen from '../screens/main/BusinessWorkDirectoryScreen';
+import AccessRequestManagementScreen from '../screens/main/AccessRequestManagementScreen';
+import MatrimonialDirectoryScreen from '../screens/main/MatrimonialDirectoryScreen';
+import NotificationScreen from '../screens/main/NotificationScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -27,6 +32,11 @@ const AppNavigator = () => {
           <>
             <Stack.Screen name="Main" component={MainTabNavigator} />
             <Stack.Screen name="SpecialGuestRequest" component={SpecialGuestRequestScreen} />
+            <Stack.Screen name="HouseDirectory" component={HouseDirectoryScreen} />
+            <Stack.Screen name="BusinessWorkDirectory" component={BusinessWorkDirectoryScreen} />
+            <Stack.Screen name="AccessRequestManagement" component={AccessRequestManagementScreen} />
+            <Stack.Screen name="MatrimonialDirectory" component={MatrimonialDirectoryScreen} />
+            <Stack.Screen name="NotificationScreen" component={NotificationScreen} />
           </>
         ) : (
           <Stack.Screen name="Auth" component={AuthNavigator} />

@@ -44,9 +44,17 @@ const RegisterScreen = ({ navigation }: any) => {
   
   // Optional
   const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [profileType, setProfileType] = useState<'GENERAL' | 'BUSINESS' | 'WORK' | 'BOTH'>('GENERAL');
+  const [businessName, setBusinessName] = useState('');
+  const [businessType, setBusinessType] = useState('Retail');
   const [businessAddress, setBusinessAddress] = useState('');
   const [occupation, setOccupation] = useState('');
-  const [businessName, setBusinessName] = useState('');
+  const [fieldOfWork, setFieldOfWork] = useState('Information Technology');
+  const [companyName, setCompanyName] = useState('');
+  const [workAddress, setWorkAddress] = useState('');
+
+  const BUSINESS_TYPES = ['Retail', 'Wholesale', 'Manufacturing', 'Services', 'Food & Hospitality', 'Real Estate', 'Healthcare', 'Tech & IT', 'Agriculture', 'Other'];
+  const WORK_FIELDS = ['Information Technology', 'Engineering', 'Government & Public Sector', 'Banking & Finance', 'Healthcare & Medical', 'Education & Teaching', 'Law & Legal', 'Skilled Trade', 'Agriculture', 'Other'];
 
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
@@ -84,9 +92,14 @@ const RegisterScreen = ({ navigation }: any) => {
         mobileNumber,
         otp,
         whatsappNumber,
-        businessAddress,
-        occupation,
-        businessName
+        profileType,
+        businessAddress: (profileType === 'BUSINESS' || profileType === 'BOTH') ? businessAddress : undefined,
+        occupation: (profileType === 'WORK' || profileType === 'BOTH') ? occupation : undefined,
+        businessName: (profileType === 'BUSINESS' || profileType === 'BOTH') ? businessName : undefined,
+        businessType: (profileType === 'BUSINESS' || profileType === 'BOTH') ? businessType : undefined,
+        fieldOfWork: (profileType === 'WORK' || profileType === 'BOTH') ? fieldOfWork : undefined,
+        companyName: (profileType === 'WORK' || profileType === 'BOTH') ? companyName : undefined,
+        workAddress: (profileType === 'WORK' || profileType === 'BOTH') ? workAddress : undefined
       };
 
       const response = await api.post('/auth/register', payload);
@@ -129,17 +142,88 @@ const RegisterScreen = ({ navigation }: any) => {
             </View>
 
             <Input label={t('fullName') || 'Full Name'} value={fullName} onChangeText={setFullName} editable={!otpSent} />
-            <Input label={t('fatherName') || 'Father Name'} value={fatherName} onChangeText={setFatherName} editable={!otpSent} />
-            <Input label={t('residentialAddress') || 'Address'} value={residentialAddress} onChangeText={setResidentialAddress} editable={!otpSent} />
+            <Input label={(t as any)('fatherName') || 'Father Name'} value={fatherName} onChangeText={setFatherName} editable={!otpSent} />
+            <Input label={(t as any)('residentialAddress') || 'Address'} value={residentialAddress} onChangeText={setResidentialAddress} editable={!otpSent} />
             <Input label={t('mobileNumber') || 'Mobile Number'} value={mobileNumber} onChangeText={setMobileNumber} keyboardType="phone-pad" editable={!otpSent} />
             
             <View style={styles.divider} />
-            <Text style={styles.optionalTitle}>{t('optionalDetails') || 'Optional Details'}</Text>
-            
+            <Text style={styles.optionalTitle}>{t('optionalDetails') || 'Profile & Classification'}</Text>
+
             <Input label={t('whatsapp') || 'WhatsApp Number'} value={whatsappNumber} onChangeText={setWhatsappNumber} keyboardType="phone-pad" editable={!otpSent} />
-            <Input label={t('businessAddress') || 'Business Address'} value={businessAddress} onChangeText={setBusinessAddress} editable={!otpSent} />
-            <Input label={t('occupation') || 'Occupation'} value={occupation} onChangeText={setOccupation} editable={!otpSent} />
-            <Input label={t('businessName') || 'Business Name'} value={businessName} onChangeText={setBusinessName} editable={!otpSent} />
+
+            {/* Profile Classification Type (Requirement 1) */}
+            <Text style={styles.label}>Profile Type / தொழில் வகை</Text>
+            <View style={styles.profileTypeRow}>
+              {(['GENERAL', 'BUSINESS', 'WORK', 'BOTH'] as const).map((type) => {
+                const isSelected = profileType === type;
+                const label = type === 'GENERAL' ? 'General' : type === 'BUSINESS' ? 'Business' : type === 'WORK' ? 'Work' : 'Both';
+                return (
+                  <TouchableOpacity
+                    key={type}
+                    style={[styles.profileTypeBtn, isSelected && styles.profileTypeBtnActive]}
+                    onPress={() => setProfileType(type)}
+                    disabled={otpSent}
+                  >
+                    <Text style={[styles.profileTypeText, isSelected && styles.profileTypeTextActive]}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Business Profile Details (Requirement 1) */}
+            {(profileType === 'BUSINESS' || profileType === 'BOTH') && (
+              <View style={styles.classifiedSection}>
+                <Text style={styles.classifiedHeading}>🏢 Business Details (வணிக விவரங்கள்)</Text>
+                <Input label="Business Name / வணிகப் பெயர்" value={businessName} onChangeText={setBusinessName} editable={!otpSent} />
+                
+                <Text style={styles.subLabel}>Business Type / தொழில் பிரிவு</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+                  {BUSINESS_TYPES.map((bt) => {
+                    const isSelected = businessType === bt;
+                    return (
+                      <TouchableOpacity
+                        key={bt}
+                        style={[styles.chip, isSelected && styles.chipActive]}
+                        onPress={() => setBusinessType(bt)}
+                        disabled={otpSent}
+                      >
+                        <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>{bt}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                <Input label="Business Address / வணிக முகவரி" value={businessAddress} onChangeText={setBusinessAddress} editable={!otpSent} />
+              </View>
+            )}
+
+            {/* Work Profile Details (Requirement 1) */}
+            {(profileType === 'WORK' || profileType === 'BOTH') && (
+              <View style={styles.classifiedSection}>
+                <Text style={styles.classifiedHeading}>💼 Work Profile (பணி விவரங்கள்)</Text>
+                <Input label="Occupation / Job Title (தொழில்/பதவி)" value={occupation} onChangeText={setOccupation} editable={!otpSent} />
+
+                <Text style={styles.subLabel}>Field of Work / பணித்துறை</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+                  {WORK_FIELDS.map((wf) => {
+                    const isSelected = fieldOfWork === wf;
+                    return (
+                      <TouchableOpacity
+                        key={wf}
+                        style={[styles.chip, isSelected && styles.chipActive]}
+                        onPress={() => setFieldOfWork(wf)}
+                        disabled={otpSent}
+                      >
+                        <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>{wf}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                <Input label="Company Name / நிறுவனம்" value={companyName} onChangeText={setCompanyName} editable={!otpSent} />
+                <Input label="Work Location / பணிபுரியும் இடம்" value={workAddress} onChangeText={setWorkAddress} editable={!otpSent} />
+              </View>
+            )}
 
             {otpSent && (
               <View style={styles.otpSection}>
@@ -189,6 +273,19 @@ const styles = StyleSheet.create({
   genderTextActive: { color: '#FFFFFF', fontFamily: 'Montserrat_600SemiBold' },
   divider: { height: 1, backgroundColor: '#E5DDCF', marginVertical: 16 },
   optionalTitle: { fontSize: 16, fontFamily: 'Montserrat_600SemiBold', color: '#19352D', marginBottom: 16 },
+  profileTypeRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16, gap: 6 },
+  profileTypeBtn: { flex: 1, paddingVertical: 8, paddingHorizontal: 4, borderWidth: 1, borderColor: '#E5DDCF', borderRadius: 8, alignItems: 'center', backgroundColor: '#FDFCF9' },
+  profileTypeBtnActive: { backgroundColor: '#004831', borderColor: '#004831' },
+  profileTypeText: { fontSize: 12, color: '#19352D', fontFamily: 'Montserrat_500Medium' },
+  profileTypeTextActive: { color: '#FFFFFF', fontFamily: 'Montserrat_600SemiBold' },
+  classifiedSection: { backgroundColor: '#F9F7F2', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#E5DDCF', marginBottom: 16 },
+  classifiedHeading: { fontSize: 14, fontFamily: 'Montserrat_700Bold', color: '#004831', marginBottom: 10 },
+  subLabel: { fontSize: 12, fontFamily: 'Montserrat_600SemiBold', color: '#19352D', marginBottom: 8, marginTop: 4 },
+  chipsScroll: { marginBottom: 12 },
+  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5DDCF', marginRight: 8 },
+  chipActive: { backgroundColor: '#004831', borderColor: '#004831' },
+  chipText: { fontSize: 12, color: '#19352D', fontFamily: 'Montserrat_500Medium' },
+  chipTextActive: { color: '#FFFFFF', fontFamily: 'Montserrat_600SemiBold' },
   otpSection: { marginTop: 10 },
   button: { marginTop: 16 },
   loginContainer: { marginTop: 16 }

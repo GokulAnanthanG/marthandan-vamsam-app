@@ -129,4 +129,86 @@ export const specialAccessApi = {
   rejectAccess: (permissionId: string) => api.post(`/special-access-permissions/${permissionId}/reject`),
 };
 
+// Events API with Categories (Requirement 2)
+export const eventsApi = {
+  getEvents: (params?: { date?: string; status?: string; category?: string }) =>
+    api.get('/events', { params }),
+  createEvent: (data: { eventName: string; date: string; time: string; location: string; description?: string; category: string }) =>
+    api.post('/events', data),
+  updateStatus: (id: string, status: string) =>
+    api.patch(`/events/${id}/status`, { status }),
+};
+
+// House / Illangal Directory API (Requirement 3)
+export const houseApi = {
+  getHouses: (params?: { page?: number; limit?: number; search?: string }) =>
+    api.get('/houses', { params }),
+  checkAccess: () =>
+    api.get('/houses/check-access'),
+};
+
+// Business and Work Directory API (Requirement 1 & Requirement 4)
+export const businessWorkApi = {
+  getBusinesses: (params?: { businessType?: string; relationFilter?: string; search?: string }) =>
+    api.get('/business-work/businesses', { params }),
+  getWorkProfiles: (params?: { fieldOfWork?: string; relationFilter?: string; search?: string }) =>
+    api.get('/business-work/work-profiles', { params }),
+  getRelatives: (params?: { search?: string }) =>
+    api.get('/business-work/relatives', { params }),
+  getEmployees: (ownerId: string) =>
+    api.get(`/business-work/businesses/${ownerId}/employees`),
+};
+
+// Centralized Access Requests API (Requirement 5)
+export const accessRequestApi = {
+  createRequest: (data: {
+    requestType: 'HOUSE' | 'WORK_ADDRESS' | 'EMPLOYEES' | 'VARAN' | 'BUSINESS';
+    targetUserId?: string;
+    targetMemberId?: string;
+    targetVaranId?: string;
+    reason?: string;
+  }) => api.post('/access-requests', data),
+  getRequestsByTab: (tab: string, status?: string, page: number = 1, limit: number = 20) =>
+    api.get('/access-requests', { params: { tab, status, page, limit } }),
+  getMySentRequests: () =>
+    api.get('/access-requests/my-sent'),
+  approveRequest: (id: string) =>
+    api.patch(`/access-requests/${id}/approve`),
+  rejectRequest: (id: string, rejectionReason: string) =>
+    api.patch(`/access-requests/${id}/reject`, { rejectionReason }),
+};
+
+// Varan / Matrimonial Directory API (Requirement 5.4)
+export const matrimonialApi = {
+  getProfiles: (params?: { gender?: string; search?: string }) =>
+    api.get('/matrimonial/profiles', { params }),
+  getProfileDetail: (id: string) =>
+    api.get(`/matrimonial/profiles/${id}`),
+  updateAssets: (id: string, assets: {
+    bridePhotoUrl?: string;
+    groomPhotoUrl?: string;
+    jathagamUrl?: string;
+    biodataUrl?: string;
+    about?: string;
+  }) => api.patch(`/matrimonial/profiles/${id}/assets`, assets),
+};
+
+// Centralized Notification Module API (Requirement 6)
+export const notificationApi = {
+  getNotifications: (params?: { unreadOnly?: boolean; page?: number; limit?: number }) =>
+    api.get('/notifications', { params }),
+  getUnreadCount: () =>
+    api.get('/notifications/unread-count'),
+  markAsRead: (id: string) =>
+    api.patch(`/notifications/${id}/read`),
+  markAllAsRead: () =>
+    api.post('/notifications/mark-all-read'),
+};
+
+// User Profile API
+export const userApi = {
+  getProfile: () => api.get('/users/profile'),
+  updateProfile: (data: any) => api.put('/users/profile', data),
+};
+
 export default api;
